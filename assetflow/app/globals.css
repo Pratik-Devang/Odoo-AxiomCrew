@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-gray-800;
+  }
+
+  html,
+  body {
+    @apply min-h-full bg-af-background text-gray-100;
+  }
+
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .af-panel {
+    @apply rounded-2xl border border-gray-800 bg-af-panel;
+  }
+
+  .af-primary-button {
+    @apply rounded-md border border-af-green bg-af-green px-4 py-2 text-sm font-medium text-green-100 transition-colors hover:border-green-400 hover:text-green-400;
+  }
+}
