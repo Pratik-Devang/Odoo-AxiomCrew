@@ -15,7 +15,6 @@ import {
   BarChart3,
   Bell,
   Building2,
-  Activity,
   LogOut,
 } from "lucide-react";
 
@@ -23,11 +22,11 @@ const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Assets", href: "/assets", icon: Package },
   { label: "Allocations", href: "/allocations", icon: ArrowLeftRight },
-  { label: "Bookings", href: "/bookings", icon: CalendarDays },
+  { label: "Resource Booking", href: "/resource-booking", icon: CalendarDays },
   { label: "Maintenance", href: "/maintenance", icon: Wrench },
   { label: "Audits", href: "/audits", icon: ClipboardList },
   { label: "Reports", href: "/reports", icon: BarChart3 },
-  { label: "Activity", href: "/activity", icon: Activity },
+  { label: "Notifications", href: "/notifications", icon: Bell },
 ] as const;
 
 const adminNavItems = [
@@ -171,7 +170,7 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/activity"
+              href="/notifications"
               className="relative flex h-8 w-8 items-center justify-center rounded-md text-ink3 transition hover:bg-sunken hover:text-ink"
             >
               <Bell size={16} />
@@ -191,11 +190,11 @@ function getPageTitle(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") return "Dashboard";
   if (pathname.startsWith("/assets")) return "Asset Registry";
   if (pathname.startsWith("/allocations")) return "Allocation & Transfer";
-  if (pathname.startsWith("/bookings")) return "Resource Booking";
+  if (pathname.startsWith("/bookings") || pathname.startsWith("/resource-booking")) return "Resource Booking";
   if (pathname.startsWith("/maintenance")) return "Maintenance";
   if (pathname.startsWith("/audits")) return "Audits";
   if (pathname.startsWith("/reports")) return "Reports & Analytics";
-  if (pathname.startsWith("/activity")) return "Activity & Notifications";
+  if (pathname.startsWith("/activity") || pathname.startsWith("/notifications")) return "Notifications";
   if (pathname.startsWith("/org")) return "Organization Setup";
   return "AssetFlow";
 }
