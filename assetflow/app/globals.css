@@ -5,6 +5,23 @@
 @layer base {
   :root {
     color-scheme: light;
+    --color-depth: #1e2a3a;
+    --color-deep-mid: #253447;
+    --color-surface: #f8f7f4;
+    --color-card: #ffffff;
+    --color-border: #e4e2dc;
+    --color-border-dark: #c8c5bc;
+    --color-ink: #1a1f2e;
+    --color-muted: #7c8494;
+    --color-accent: #6b5fe4;
+    --color-accent-dark: #5a4fd3;
+    --color-accent-light: #eeecfb;
+    --color-go: #3a9e6f;
+    --color-go-light: #e8f5ee;
+    --color-warn: #d4860a;
+    --color-warn-light: #fdf3e0;
+    --color-danger: #c0392b;
+    --color-danger-light: #fbe9e7;
   }
 
   html,
@@ -16,68 +33,141 @@
     @apply antialiased font-sans;
   }
 
-  /* Default all borders to solid 1.5px ink */
   * {
-    @apply border-ink;
+    @apply border-border;
   }
 }
 
 @layer components {
-  /* Flat input: sharp, solid border, custom outline focus */
   .af-input {
-    @apply w-full rounded-none border-2 border-ink bg-surface px-3.5 py-2 text-sm text-ink outline-none transition
+    @apply h-9 w-full rounded-md border border-border bg-surface px-3 text-sm font-sans text-ink outline-none
       placeholder:text-ink3
-      focus:border-signal focus:ring-0;
+      hover:border-borderDark
+      focus:border-signal focus:ring-4 focus:ring-violet_bg;
   }
 
-  /* Primary flat button: 0px rounded, bold fill, active translate effect */
+  .af-btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border px-5 text-[13px] font-semibold tracking-[0.01em] transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
   .af-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-signal px-5 py-2 text-sm font-semibold text-white transition-all
-      hover:bg-signal2 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-signal bg-signal px-5 text-[13px] font-semibold tracking-[0.01em] text-white transition-colors hover:border-signal2 hover:bg-signal2 focus:outline-none focus:ring-4 focus:ring-violet_bg disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Secondary flat button: sharp, outline style */
   .af-btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-surface px-4 py-1.5 text-xs font-semibold text-ink transition-all
-      hover:bg-sunken active:translate-y-[1px];
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-surface px-5 text-[13px] font-semibold tracking-[0.01em] text-ink transition-colors hover:border-borderDark hover:bg-canvas focus:outline-none focus:ring-4 focus:ring-violet_bg disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Danger flat button: solid red, sharp */
   .af-btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-danger px-5 py-2 text-sm font-semibold text-white transition-all
-      hover:bg-red-700 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-danger bg-danger px-5 text-[13px] font-semibold tracking-[0.01em] text-white transition-colors hover:bg-[#A93226] focus:outline-none focus:ring-4 focus:ring-danger_bg disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Dense flat table cells */
   .af-th {
-    @apply sticky top-0 z-10 bg-surface px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-ink border-b-2 border-ink;
+    @apply sticky top-0 z-10 border-b border-border bg-canvas px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink3;
   }
 
   .af-td {
-    @apply px-4 py-3 text-sm text-ink border-b border-ink/20;
+    @apply border-b border-border px-4 py-3 text-sm font-sans text-ink;
   }
 
-  /* Flat cards: 0px rounded, solid borders, zero shadows */
   .af-card {
-    @apply rounded-none border-2 border-ink bg-surface shadow-none;
+    @apply rounded-md border border-border bg-surface shadow-none;
   }
 
   .af-section-head {
-    @apply text-xs font-bold uppercase tracking-wider text-ink3;
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-ink3;
   }
 
-  /* Flat chips: solid border and flat backgrounds */
   .af-chip {
-    @apply inline-flex items-center gap-1.5 rounded-none border border-ink px-2 py-0.5 text-xs font-semibold;
+    @apply inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-semibold tracking-[0.04em];
   }
 
-  /* Kanban card */
-  .af-kanban-card {
-    @apply rounded-none border-2 border-ink bg-surface p-4 mb-3 shadow-none hover:bg-sunken/45 transition-colors cursor-pointer;
-  }
-
-  /* Skeletons */
   .af-skeleton {
-    @apply bg-sunken animate-pulse rounded-none;
+    @apply animate-pulse rounded-md bg-sunken;
+  }
+
+  .af-kpi-card {
+    @apply relative min-h-[140px] overflow-hidden rounded-md border border-border bg-surface p-6 shadow-none;
+  }
+
+  .af-kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+  }
+
+  .af-kpi-go::before {
+    background: var(--color-go);
+  }
+
+  .af-kpi-warn::before {
+    background: var(--color-warn);
+  }
+
+  .af-kpi-accent::before {
+    background: var(--color-accent);
+  }
+
+  .af-kpi-neutral::before {
+    background: var(--color-border-dark);
+  }
+
+  .af-asset-id {
+    @apply inline-flex shrink-0 items-center rounded bg-violet_bg px-1.5 py-0.5 font-mono text-xs font-medium text-signal;
+  }
+
+  .af-status-chip {
+    @apply inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-semibold tracking-[0.04em];
+  }
+
+  .af-status-chip::before {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full;
+    content: "";
+  }
+
+  .af-live-pulse {
+    position: relative;
+    display: inline-flex;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-go);
+  }
+
+  .af-live-pulse::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--color-go);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .af-card,
+  .af-kpi-card {
+    transition: border-color 120ms ease;
+  }
+
+  .af-card:hover,
+  .af-kpi-card:hover {
+    border-color: var(--color-border-dark);
+  }
+
+  @keyframes af-ping {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    75%,
+    100% {
+      transform: scale(1.8);
+      opacity: 0;
+    }
+  }
+
+  .af-live-pulse::before {
+    animation: af-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }

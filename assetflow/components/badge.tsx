@@ -18,10 +18,10 @@ export type BadgeStatus =
   | "rejected";
 
 const badgeStyles = {
-  success: "border-green-500/60 bg-green-500/10 text-green-400",
-  danger: "border-red-500/60 bg-red-500/10 text-red-400",
-  warning: "border-amber-500/60 bg-amber-500/10 text-amber-400",
-  neutral: "border-gray-600 bg-gray-500/10 text-gray-400",
+  success: "bg-go_bg text-go before:bg-go",
+  danger: "bg-danger_bg text-danger before:bg-danger",
+  warning: "bg-warn_bg text-warn before:bg-warn",
+  neutral: "bg-gray_bg text-ink2 before:bg-ink2",
 } as const;
 
 const statusConfig: Record<BadgeStatus, { label: string; tone: keyof typeof badgeStyles }> = {
@@ -48,7 +48,7 @@ export function Badge({ status, className }: { status: BadgeStatus; className?: 
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none tracking-[0.12em]",
+        "af-status-chip",
         badgeStyles[config.tone],
         className,
       )}

@@ -1,7 +1,40 @@
 import { NextResponse } from "next/server";
-import { addDays, format, isBefore } from "date-fns";
+import { addDays, format, isBefore, startOfDay, subDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+
+const dayKey = (date: Date) => format(date, "yyyy-MM-dd");
+
+function countsByDay(dates: Date[], days: Date[]) {
+  const counts = new Map(days.map((day) => [dayKey(day), 0]));
+
+  dates.forEach((date) => {
+    const key = dayKey(date);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  return days.map((day) => counts.get(dayKey(day)) ?? 0);
+}
+
+function stockTrend(current: number, positiveEvents: number[], negativeEvents: number[] = []) {
+  const values = Array(positiveEvents.length).fill(0);
+  let cursor = current;
+
+  for (let index = positiveEvents.length - 1; index >= 0; index -= 1) {
+    values[index] = Math.max(0, cursor);
+    cursor = cursor - positiveEvents[index] + negativeEvents[index];
+  }
+
+  return values;
+}
+
+function activityTrend(current: number, activity: number[]) {
+  const peak = Math.max(current, ...activity, 1);
+  return activity.map((value, index) => {
+    if (index === activity.length - 1) return current;
+    return Math.max(0, Math.round((value / peak) * Math.max(current, peak)));
+  });
+}
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -11,9 +44,13 @@ export async function GET() {
   }
 
   const now = new Date();
+  const today = startOfDay(now);
   const nextWeek = addDays(now, 7);
+  const weekStart = startOfDay(subDays(now, 6));
+  const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 
   const [
+    totalAssets,
     assetsAvailable,
     assetsAllocated,
     bookableFree,
@@ -24,7 +61,19 @@ export async function GET() {
     allocations,
     bookings,
     maintenanceRequests,
+    transferRequests,
+    activeDepartmentAllocations,
+    weekAllocations,
+    weekReturnedAllocations,
+    weekBookings,
+    weekTransfers,
+    weekMaintenanceRequests,
+    weekExpectedReturns,
+    auditDueThisWeek,
+    todaysBookings,
+    oldestPendingMaintenance,
   ] = await Promise.all([
+    prisma.asset.count(),
     prisma.asset.count({ where: { status: "AVAILABLE" } }),
     prisma.asset.count({ where: { status: "ALLOCATED" } }),
     prisma.asset.count({
@@ -81,7 +130,119 @@ export async function GET() {
         raisedBy: { select: { name: true } },
       },
     }),
+    prisma.transferRequest.findMany({
+      take: 10,
+      orderBy: { requestedAt: "desc" },
+      include: {
+        asset: { select: { name: true, tag: true } },
+        fromEmployee: { select: { name: true } },
+        toEmployee: { select: { name: true } },
+      },
+    }),
+    prisma.allocation.findMany({
+      where: { status: "ACTIVE" },
+      select: {
+        department: { select: { name: true } },
+        employee: { select: { department: { select: { name: true } } } },
+      },
+    }),
+    prisma.allocation.findMany({
+      where: { allocatedAt: { gte: weekStart } },
+      select: { allocatedAt: true },
+    }),
+    prisma.allocation.findMany({
+      where: { returnedAt: { gte: weekStart } },
+      select: { returnedAt: true },
+    }),
+    prisma.booking.findMany({
+      where: { createdAt: { gte: weekStart } },
+      select: { createdAt: true },
+    }),
+    prisma.transferRequest.findMany({
+      where: { requestedAt: { gte: weekStart } },
+      select: { requestedAt: true },
+    }),
+    prisma.maintenanceRequest.findMany({
+      where: { raisedAt: { gte: weekStart } },
+      select: { raisedAt: true },
+    }),
+    prisma.allocation.findMany({
+      where: {
+        status: "ACTIVE",
+        expectedReturnDate: {
+          gte: weekStart,
+          lte: nextWeek,
+        },
+      },
+      select: { expectedReturnDate: true },
+    }),
+    prisma.auditItem.count({
+      where: {
+        verification: "PENDING",
+        auditCycle: {
+          status: "OPEN",
+          endDate: {
+            gte: today,
+            lte: nextWeek,
+          },
+        },
+      },
+    }),
+    prisma.booking.findMany({
+      where: {
+        startTime: {
+          gte: today,
+          lt: addDays(today, 1),
+        },
+        status: { in: ["UPCOMING", "ONGOING"] },
+      },
+      include: {
+        asset: { select: { name: true } },
+      },
+    }),
+    prisma.maintenanceRequest.findFirst({
+      where: { status: { in: ["PENDING", "APPROVED", "TECHNICIAN_ASSIGNED", "IN_PROGRESS"] } },
+      orderBy: { raisedAt: "asc" },
+      include: {
+        asset: { select: { name: true } },
+      },
+    }),
   ]);
+
+  const allocationSeries = countsByDay(weekAllocations.map((item) => item.allocatedAt), days);
+  const returnSeries = countsByDay(
+    weekReturnedAllocations.flatMap((item) => (item.returnedAt ? [item.returnedAt] : [])),
+    days
+  );
+  const bookingSeries = countsByDay(weekBookings.map((item) => item.createdAt), days);
+  const transferSeries = countsByDay(weekTransfers.map((item) => item.requestedAt), days);
+  const maintenanceSeries = countsByDay(weekMaintenanceRequests.map((item) => item.raisedAt), days);
+  const expectedReturnSeries = countsByDay(
+    weekExpectedReturns.flatMap((item) => (item.expectedReturnDate ? [item.expectedReturnDate] : [])),
+    days
+  );
+  const activitySeries = days.map((_, index) => allocationSeries[index] + bookingSeries[index]);
+
+  const departmentCounts = new Map<string, number>();
+  activeDepartmentAllocations.forEach((allocation) => {
+    const name = allocation.department?.name ?? allocation.employee?.department?.name ?? "Unassigned";
+    departmentCounts.set(name, (departmentCounts.get(name) ?? 0) + 1);
+  });
+
+  const departmentAllocation = Array.from(departmentCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+
+  const bookingCounts = new Map<string, number>();
+  todaysBookings.forEach((booking) => {
+    bookingCounts.set(booking.asset.name, (bookingCounts.get(booking.asset.name) ?? 0) + 1);
+  });
+
+  const topBooking = Array.from(bookingCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+  const maintenanceAgeDays = oldestPendingMaintenance
+    ? Math.max(0, Math.ceil((now.getTime() - oldestPendingMaintenance.raisedAt.getTime()) / 86_400_000))
+    : 0;
 
   const activity = [
     ...allocations.map((allocation) => {
@@ -90,12 +251,14 @@ export async function GET() {
 
       return {
         id: `allocation-${allocation.id}`,
+        type: "allocation",
         timestamp: allocation.allocatedAt.toISOString(),
         text: `${allocation.asset.name} ${allocation.asset.tag} - allocated to ${holder}${dept ? ` - ${dept} dept` : ""}`,
       };
     }),
     ...bookings.map((booking) => ({
       id: `booking-${booking.id}`,
+      type: "booking",
       timestamp: booking.createdAt.toISOString(),
       text: `${booking.asset.name} ${booking.asset.tag} - booking ${booking.status.toLowerCase()} - ${format(
         booking.startTime,
@@ -104,10 +267,17 @@ export async function GET() {
     })),
     ...maintenanceRequests.map((request) => ({
       id: `maintenance-${request.id}`,
+      type: "maintenance",
       timestamp: request.raisedAt.toISOString(),
       text: `${request.asset.name} ${request.asset.tag} - maintenance ${request.status.toLowerCase().replaceAll("_", " ")} - raised by ${
         request.raisedBy.name
       }`,
+    })),
+    ...transferRequests.map((request) => ({
+      id: `transfer-${request.id}`,
+      type: "transfer",
+      timestamp: request.requestedAt.toISOString(),
+      text: `${request.asset.name} ${request.asset.tag} - transfer requested from ${request.fromEmployee.name} to ${request.toEmployee.name}`,
     })),
   ]
     .sort((a, b) => (isBefore(new Date(a.timestamp), new Date(b.timestamp)) ? 1 : -1))
@@ -121,6 +291,30 @@ export async function GET() {
       activeBookings,
       pendingTransfers,
       upcomingReturns,
+    },
+    summary: {
+      totalAssets,
+      utilizationPercent: totalAssets > 0 ? Math.round((assetsAllocated / totalAssets) * 100) : 0,
+      departmentAllocation,
+      activitySeries,
+    },
+    trends: {
+      assetsAvailable: stockTrend(assetsAvailable, returnSeries, allocationSeries),
+      assetsAllocated: stockTrend(assetsAllocated, allocationSeries, returnSeries),
+      bookableFree: activityTrend(bookableFree, bookingSeries.map((value) => Math.max(0, value))),
+      activeBookings: activityTrend(activeBookings, bookingSeries),
+      pendingTransfers: stockTrend(pendingTransfers, transferSeries),
+      upcomingReturns: activityTrend(upcomingReturns, expectedReturnSeries),
+    },
+    insights: {
+      auditDueThisWeek,
+      topBooking: topBooking ? { assetName: topBooking[0], count: topBooking[1] } : null,
+      oldestMaintenance: oldestPendingMaintenance
+        ? {
+            assetName: oldestPendingMaintenance.asset.name,
+            ageDays: maintenanceAgeDays,
+          }
+        : null,
     },
     overdueReturns,
     recentActivity: activity,
