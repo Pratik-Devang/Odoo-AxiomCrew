@@ -248,6 +248,7 @@ model MaintenanceRequest {
   approvedById     Int?
   raisedAt         DateTime            @default(now())
   resolvedAt       DateTime?
+  photoUrl         String?
 
   asset      Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
   raisedBy   User  @relation("MaintenanceRaisedBy", fields: [raisedById], references: [id], onDelete: Restrict)
@@ -297,6 +298,7 @@ model AuditItem {
   verification     AuditVerification @default(PENDING)
   verifiedById     Int?
   verifiedAt       DateTime?
+  notes            String?
 
   auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
   asset      Asset      @relation(fields: [assetId], references: [id], onDelete: Restrict)

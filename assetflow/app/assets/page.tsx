@@ -1,56 +1,115 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import { StatusChip } from "@/components/status-chip";
 import { AssetTag } from "@/components/asset-tag";
 import { EmptyState } from "@/components/empty-state";
-import { Search, SlidersHorizontal, Plus, X, ChevronRight, Package } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, ChevronRight, Package, Loader2 } from "lucide-react";
 
-const assets = [
-  { tag: "AF-0001", name: "Dell XPS 15 Laptop", category: "Electronics", status: "ALLOCATED", holder: "Priya Shah", location: "Floor 2, Desk 14", condition: "Good" },
-  { tag: "AF-0002", name: "Herman Miller Aeron Chair", category: "Furniture", status: "AVAILABLE", holder: "—", location: "Store Room A", condition: "Excellent" },
-  { tag: "AF-0003", name: "Canon EOS R6 Camera", category: "Electronics", status: "UNDER_MAINTENANCE", holder: "—", location: "Service Center", condition: "Fair" },
-  { tag: "AF-0004", name: "Standing Desk 180cm", category: "Furniture", status: "AVAILABLE", holder: "—", location: "Floor 3, Bay 5", condition: "Good" },
-  { tag: "AF-0005", name: "Projector Epson EB-L510U", category: "AV Equipment", status: "RESERVED", holder: "Meeting Room B", location: "Floor 1", condition: "Good" },
-  { tag: "AF-0006", name: "MacBook Pro 14\"", category: "Electronics", status: "ALLOCATED", holder: "Liam Patel", location: "Floor 2, Desk 22", condition: "Excellent" },
-  { tag: "AF-0007", name: "Whiteboard 240x120", category: "Office Equipment", status: "AVAILABLE", holder: "—", location: "Floor 3, Room 12", condition: "Good" },
-  { tag: "AF-0008", name: "Toyota HiAce Van", category: "Vehicles", status: "ALLOCATED", holder: "Ethan Brown", location: "Parking Lot B", condition: "Good" },
-  { tag: "AF-0009", name: "Cisco IP Phone 8800", category: "Electronics", status: "AVAILABLE", holder: "—", location: "Store Room B", condition: "Excellent" },
-  { tag: "AF-0010", name: "Sony Bravia 65\" TV", category: "AV Equipment", status: "ALLOCATED", holder: "Conference Room A", location: "Floor 1", condition: "Good" },
-  { tag: "AF-0011", name: "HP LaserJet Pro", category: "Office Equipment", status: "UNDER_MAINTENANCE", holder: "—", location: "Service Center", condition: "Fair" },
-  { tag: "AF-0012", name: "Ergonomic Keyboard + Mouse Set", category: "Electronics", status: "AVAILABLE", holder: "—", location: "Store Room A", condition: "Good" },
-];
+interface Asset {
+  id: number;
+  tag: string;
+  name: string;
+  status: string;
+  location: string;
+  condition: string;
+  acquisitionDate: string;
+  acquisitionCost: string;
+  category: { id: number; name: string };
+  currentHolder: { id: number; name: string } | null;
+  currentHolderDepartment: { id: number; name: string } | null;
+}
+
+interface MaintenanceRequest {
+  id: number;
+  status: string;
+  issueDescription: string;
+  technicianName: string | null;
+  raisedAt: string;
+}
 
 interface AssetDetailDrawerProps {
-  asset: (typeof assets)[0] | null;
+  asset: Asset | null;
   onClose: () => void;
 }
 
 function AssetDetailDrawer({ asset, onClose }: AssetDetailDrawerProps) {
   const [tab, setTab] = useState<"details" | "history">("details");
+  const [history, setHistory] = useState<{ event: string; detail: string; date: string }[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (!asset) return;
+
+    const fetchHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const response = await fetch(`/api/maintenance-requests?assetId=${asset.id}`, { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          const requests: MaintenanceRequest[] = data.requests || [];
+
+          // Map maintenance requests to history format
+          const maintenanceHistory = requests.map((req) => ({
+            event: `Maintenance — ${req.status.replace("_", " ")}`,
+            detail: `${req.issueDescription}${req.technicianName ? ` (tech: ${req.technicianName})` : ""}`,
+            date: new Date(req.raisedAt).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          }));
+
+          // Add a base registration event
+          const registrationEvent = {
+            event: "Registered",
+            detail: "Asset added to registry",
+            date: new Date(asset.acquisitionDate).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          };
+
+          setHistory([...maintenanceHistory, registrationEvent]);
+        }
+      } catch (err) {
+        console.error("Failed to load asset maintenance history:", err);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    void fetchHistory();
+  }, [asset]);
 
   if (!asset) return null;
 
+  const currentHolderName = asset.currentHolder?.name || asset.currentHolderDepartment?.name || "—";
+
   const details = [
     { label: "Asset Tag", value: <AssetTag tag={asset.tag} /> },
-    { label: "Category", value: asset.category },
+    { label: "Category", value: asset.category.name },
     { label: "Status", value: <StatusChip status={asset.status} /> },
-    { label: "Current Holder", value: asset.holder || "Unassigned" },
+    { label: "Current Holder", value: currentHolderName },
     { label: "Location", value: asset.location },
     { label: "Condition", value: asset.condition },
-  ];
-
-  const history = [
-    { event: "Allocated", detail: "Assigned to Priya Shah", date: "Dec 10, 2025" },
-    { event: "Returned", detail: "Returned to store", date: "Nov 28, 2025" },
-    { event: "Maintenance", detail: "Screen replaced", date: "Nov 15, 2025" },
-    { event: "Registered", detail: "Asset added to registry", date: "Jan 5, 2025" },
+    {
+      label: "Acquisition Date",
+      value: new Date(asset.acquisitionDate).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    },
+    { label: "Acquisition Cost", value: `$${parseFloat(asset.acquisitionCost).toFixed(2)}` },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
       <div
         className="w-[480px] h-full bg-surface border-l border-border shadow-lg flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -63,9 +122,9 @@ function AssetDetailDrawer({ asset, onClose }: AssetDetailDrawerProps) {
               <AssetTag tag={asset.tag} />
               <StatusChip status={asset.status} size="sm" />
             </div>
-            <h2 className="text-lg font-semibold text-ink">{asset.name}</h2>
+            <h2 className="text-lg font-semibold text-ink leading-snug">{asset.name}</h2>
           </div>
-          <button onClick={onClose} className="text-ink3 hover:text-ink transition">
+          <button onClick={onClose} className="text-ink3 hover:text-ink transition p-1 rounded hover:bg-sunken">
             <X size={18} />
           </button>
         </div>
@@ -77,7 +136,7 @@ function AssetDetailDrawer({ asset, onClose }: AssetDetailDrawerProps) {
               key={t}
               onClick={() => setTab(t)}
               className={`mr-6 py-3 text-sm font-medium transition border-b-2 capitalize ${
-                tab === t ? "border-signal text-ink" : "border-transparent text-ink3 hover:text-ink"
+                tab === t ? "border-signal text-ink font-semibold" : "border-transparent text-ink3 hover:text-ink"
               }`}
             >
               {t}
@@ -91,33 +150,46 @@ function AssetDetailDrawer({ asset, onClose }: AssetDetailDrawerProps) {
             <dl className="space-y-4">
               {details.map((d) => (
                 <div key={d.label} className="flex items-start justify-between py-2 border-b border-border last:border-0">
-                  <dt className="text-xs font-medium uppercase tracking-widest text-ink3">{d.label}</dt>
-                  <dd className="text-sm text-ink text-right">{d.value}</dd>
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-ink3 mt-0.5">{d.label}</dt>
+                  <dd className="text-sm text-ink text-right font-medium">{d.value}</dd>
                 </div>
               ))}
             </dl>
           )}
           {tab === "history" && (
-            <div className="relative">
-              <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
-              <div className="space-y-5 pl-8">
-                {history.map((h, i) => (
-                  <div key={i} className="relative">
-                    <div className="absolute -left-6 top-1 h-3 w-3 rounded-full border-2 border-signal bg-surface" />
-                    <p className="text-sm font-medium text-ink">{h.event}</p>
-                    <p className="text-xs text-ink3">{h.detail}</p>
-                    <p className="text-xs text-ink3 mt-0.5">{h.date}</p>
+            <div className="relative min-h-[150px]">
+              {isLoadingHistory ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 size={24} className="animate-spin text-signal" />
+                  <span className="ml-2 text-xs text-ink3">Loading history...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="absolute left-2.5 top-2.5 bottom-2.5 w-px bg-border" />
+                  <div className="space-y-5 pl-8">
+                    {history.map((h, i) => (
+                      <div key={i} className="relative">
+                        <div className="absolute -left-7 top-1 h-3 w-3 rounded-full border-2 border-signal bg-surface" />
+                        <p className="text-sm font-semibold text-ink">{h.event}</p>
+                        <p className="text-xs text-ink2 mt-0.5 leading-relaxed">{h.detail}</p>
+                        <p className="text-[10px] text-ink3 mt-1 font-mono">{h.date}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           )}
         </div>
 
         {/* Actions */}
         <div className="border-t border-border p-4 flex gap-3">
-          <button className="af-btn-primary flex-1">Allocate</button>
-          <button className="af-btn-secondary flex-1">Raise Maintenance</button>
+          <Link href={`/maintenance`} className="flex-1 af-btn-primary">
+            Manage Maintenance
+          </Link>
+          <button onClick={onClose} className="flex-1 af-btn-secondary">
+            Close
+          </button>
         </div>
       </div>
       <style>{`
@@ -132,26 +204,38 @@ function AssetDetailDrawer({ asset, onClose }: AssetDetailDrawerProps) {
 
 export default function AssetsPage() {
   const [search, setSearch] = useState("");
-  const [selectedAsset, setSelectedAsset] = useState<(typeof assets)[0] | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [assetsList, setAssetsList] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filtered = assets.filter(
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        const response = await fetch("/api/assets", { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          setAssetsList(data.assets || []);
+        }
+      } catch (err) {
+        console.error("Failed to load assets:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void fetchAssets();
+  }, []);
+
+  const filtered = assetsList.filter(
     (a) =>
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       a.tag.toLowerCase().includes(search.toLowerCase()) ||
-      a.category.toLowerCase().includes(search.toLowerCase())
+      a.category.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
       <PageHeader
         title="Asset Registry"
-        action={
-          <button className="af-btn-primary">
-            <Plus size={14} />
-            Register Asset
-          </button>
-        }
       />
 
       {/* Search bar */}
@@ -167,8 +251,8 @@ export default function AssetsPage() {
           />
         </div>
         <button
-          onClick={() => setFilterOpen(!filterOpen)}
-          className="af-btn-secondary gap-2 px-4"
+          className="af-btn-secondary gap-2 px-4 opacity-50 cursor-not-allowed"
+          disabled
         >
           <SlidersHorizontal size={14} />
           Filters
@@ -178,10 +262,10 @@ export default function AssetsPage() {
       {/* Stats row */}
       <div className="flex gap-6 mb-4 px-1">
         {[
-          { label: "Total", count: assets.length },
-          { label: "Available", count: assets.filter((a) => a.status === "AVAILABLE").length },
-          { label: "Allocated", count: assets.filter((a) => a.status === "ALLOCATED").length },
-          { label: "Maintenance", count: assets.filter((a) => a.status === "UNDER_MAINTENANCE").length },
+          { label: "Total", count: assetsList.length },
+          { label: "Available", count: assetsList.filter((a) => a.status === "AVAILABLE").length },
+          { label: "Allocated", count: assetsList.filter((a) => a.status === "ALLOCATED").length },
+          { label: "Maintenance", count: assetsList.filter((a) => a.status === "UNDER_MAINTENANCE").length },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-1.5">
             <span className="text-xs text-ink3">{s.label}:</span>
@@ -190,53 +274,63 @@ export default function AssetsPage() {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="af-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <EmptyState icon={Package} heading="No assets found" description="Try adjusting your search or filters." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="af-th">Asset Tag</th>
-                  <th className="af-th">Name</th>
-                  <th className="af-th">Category</th>
-                  <th className="af-th">Status</th>
-                  <th className="af-th">Assigned To</th>
-                  <th className="af-th">Location</th>
-                  <th className="af-th">Condition</th>
-                  <th className="af-th w-8" />
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((asset) => (
-                  <tr
-                    key={asset.tag}
-                    className="hover:bg-sunken transition-colors cursor-pointer"
-                    onClick={() => setSelectedAsset(asset)}
-                  >
-                    <td className="af-td">
-                      <AssetTag tag={asset.tag} />
-                    </td>
-                    <td className="af-td font-medium text-ink">{asset.name}</td>
-                    <td className="af-td text-ink3">{asset.category}</td>
-                    <td className="af-td">
-                      <StatusChip status={asset.status} size="sm" />
-                    </td>
-                    <td className="af-td text-ink3">{asset.holder}</td>
-                    <td className="af-td text-ink3">{asset.location}</td>
-                    <td className="af-td text-ink3">{asset.condition}</td>
-                    <td className="af-td">
-                      <ChevronRight size={14} className="text-ink3" />
-                    </td>
+      {/* Table / List */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 bg-surface rounded-lg border border-border">
+          <Loader2 size={24} className="animate-spin text-signal mr-2" />
+          <span className="text-sm text-ink3">Loading assets...</span>
+        </div>
+      ) : (
+        <div className="af-card overflow-hidden">
+          {filtered.length === 0 ? (
+            <EmptyState icon={Package} heading="No assets found" description="Try adjusting your search or filters." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="af-th">Asset Tag</th>
+                    <th className="af-th">Name</th>
+                    <th className="af-th">Category</th>
+                    <th className="af-th">Status</th>
+                    <th className="af-th">Assigned To</th>
+                    <th className="af-th">Location</th>
+                    <th className="af-th">Condition</th>
+                    <th className="af-th w-8" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {filtered.map((asset) => {
+                    const assignedTo = asset.currentHolder?.name || asset.currentHolderDepartment?.name || "—";
+                    return (
+                      <tr
+                        key={asset.tag}
+                        className="hover:bg-sunken transition-colors cursor-pointer"
+                        onClick={() => setSelectedAsset(asset)}
+                      >
+                        <td className="af-td">
+                          <AssetTag tag={asset.tag} />
+                        </td>
+                        <td className="af-td font-semibold text-ink leading-snug">{asset.name}</td>
+                        <td className="af-td text-ink2">{asset.category.name}</td>
+                        <td className="af-td">
+                          <StatusChip status={asset.status} size="sm" />
+                        </td>
+                        <td className="af-td text-ink2">{assignedTo}</td>
+                        <td className="af-td text-ink3">{asset.location}</td>
+                        <td className="af-td text-ink3">{asset.condition}</td>
+                        <td className="af-td">
+                          <ChevronRight size={14} className="text-ink3" />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Detail drawer */}
       {selectedAsset && (
