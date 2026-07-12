@@ -105,6 +105,7 @@ export default function AssetsPage() {
   const [error, setError] = useState("");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: number; name: string; role: string } | null>(null);
 
   useEffect(() => {
     if (searchParams.get("register") === "1") {
@@ -116,9 +117,10 @@ export default function AssetsPage() {
     let cancelled = false;
 
     async function loadLookups() {
-      const [categoriesResponse, departmentsResponse] = await Promise.all([
+      const [categoriesResponse, departmentsResponse, userResponse] = await Promise.all([
         fetch("/api/categories", { cache: "no-store" }),
         fetch("/api/departments", { cache: "no-store" }),
+        fetch("/api/auth/me", { cache: "no-store" }),
       ]);
 
       if (!categoriesResponse.ok || !departmentsResponse.ok) {
@@ -127,10 +129,17 @@ export default function AssetsPage() {
 
       const categoriesPayload = (await categoriesResponse.json()) as { categories: Category[] };
       const departmentsPayload = (await departmentsResponse.json()) as { departments: Department[] };
+      let userPayload = null;
+      if (userResponse.ok) {
+        userPayload = (await userResponse.json()) as { user: { id: number; name: string; role: string } };
+      }
 
       if (!cancelled) {
         setCategories(categoriesPayload.categories);
         setDepartments(departmentsPayload.departments);
+        if (userPayload) {
+          setCurrentUser(userPayload.user);
+        }
       }
     }
 
@@ -201,10 +210,12 @@ export default function AssetsPage() {
           <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Asset Registry</h1>
           <p className="mt-0.5 text-xs text-ink3">{assets.length} visible assets</p>
         </div>
-        <button onClick={() => setRegisterOpen(true)} className="af-btn-primary">
-          <Plus size={13} />
-          Register Asset
-        </button>
+        {(currentUser?.role === "ADMIN" || currentUser?.role === "DEPARTMENT_HEAD") && (
+          <button onClick={() => setRegisterOpen(true)} className="af-btn-primary">
+            <Plus size={13} />
+            Register Asset
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">

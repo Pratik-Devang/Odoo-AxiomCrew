@@ -114,7 +114,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireRole([UserRole.ADMIN, UserRole.ASSET_MANAGER]);
+  const auth = await requireRole([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD]);
   if (auth.response) return auth.response;
 
   try {
