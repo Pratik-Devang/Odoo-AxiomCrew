@@ -3,6 +3,14 @@
 
 > A next-generation, high-performance asset tracking and lifecycle management platform. Built to streamline hardware tracking, room bookings, maintenance workflows, and audit compliance with automated database updates and role-based gating. 🚀
 
+## 👥 Core Project Team
+
+Meet the engineers behind **AssetFlow**:
+
+| 🧑‍💻 | **Pratik Devang** 
+| 🎨 | **Kunal Soni** 
+| ⚙️ | **Omkar Karale** 
+| 💻 | **Surabhi Chopadekar** 
 
 ## 📌 Table of Contents
 * 🛠️ [Tech Stack & Architecture](#-tech-stack--architecture)
