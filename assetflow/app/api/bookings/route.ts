@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/require-role";
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { BookingService } from "@/lib/services/booking-service";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,26 @@ export async function GET(request: Request) {
       if ("error" in result) {
         return NextResponse.json({ error: result.error, code: result.code }, { status: result.status });
       }
+
+      if (auth.user.role === UserRole.EMPLOYEE) {
+        result.bookings = result.bookings.filter((b: any) => b.bookedById === auth.user.id);
+      } else if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+        if (auth.user.departmentId === null) {
+          result.bookings = [];
+        } else {
+          const deptAssets = await prisma.asset.findMany({
+            where: {
+              OR: [
+                { currentHolderDepartmentId: auth.user.departmentId },
+                { currentHolder: { departmentId: auth.user.departmentId } },
+              ],
+            },
+            select: { id: true },
+          });
+          const deptAssetIds = new Set(deptAssets.map((a) => a.id));
+          result.bookings = result.bookings.filter((b: any) => deptAssetIds.has(b.assetId));
+        }
+      }
       return NextResponse.json(result);
     }
 
@@ -44,6 +65,26 @@ export async function GET(request: Request) {
     const result = await BookingService.getBookingsForAsset(Number(assetId), date);
     if ("error" in result) {
       return NextResponse.json({ error: result.error, code: result.code }, { status: result.status });
+    }
+
+    if (auth.user.role === UserRole.EMPLOYEE) {
+      result.bookings = result.bookings.filter((b: any) => b.bookedById === auth.user.id);
+    } else if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+      if (auth.user.departmentId === null) {
+        result.bookings = [];
+      } else {
+        const asset = await prisma.asset.findUnique({
+          where: { id: Number(assetId) },
+          select: { currentHolderDepartmentId: true, currentHolder: { select: { departmentId: true } } },
+        });
+        const isDeptAsset =
+          asset &&
+          (asset.currentHolderDepartmentId === auth.user.departmentId ||
+            asset.currentHolder?.departmentId === auth.user.departmentId);
+        if (!isDeptAsset) {
+          result.bookings = [];
+        }
+      }
     }
 
     return NextResponse.json(result);

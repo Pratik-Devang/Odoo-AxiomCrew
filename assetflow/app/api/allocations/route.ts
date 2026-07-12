@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { AllocationService } from "@/lib/services/allocation-service";
 
 export async function POST(request: Request) {
-  const auth = await requireRole(Object.values(UserRole));
+  const auth = await requireRole([UserRole.ADMIN, UserRole.ASSET_MANAGER]);
   if (auth.response) return auth.response;
 
   try {

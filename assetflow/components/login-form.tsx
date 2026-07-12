@@ -3,27 +3,98 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
+
+const demoCredentials = [
+  {
+    role: "Admin",
+    name: "Avery Admin",
+    email: "admin@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Priya Shah",
+    email: "priya.shah@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Marcus Reed",
+    email: "marcus.reed@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Asset Manager",
+    name: "Elena Torres",
+    email: "elena.torres@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Asset Manager",
+    name: "Noah Williams",
+    email: "noah.williams@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Mia Chen",
+    email: "mia.chen@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Liam Patel",
+    email: "liam.patel@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Sofia Martinez",
+    email: "sofia.martinez@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ethan Brown",
+    email: "ethan.brown@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Isabella Davis",
+    email: "isabella.davis@assetflow.local",
+    password: "Password123!",
+  },
+];
 
 export function LoginForm({ redirectTo = "/dashboard", accountCreated = false }) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+
+  function fillCredentials(account: (typeof demoCredentials)[number]) {
+    setEmail(account.email);
+    setPassword(account.password);
+    setError("");
+    setCredentialsOpen(false);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
-
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.get("email"),
-          password: formData.get("password"),
+          email,
+          password,
         }),
       });
       const data = (await response.json()) as { error?: string };
@@ -53,6 +124,36 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
         </div>
       )}
 
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setCredentialsOpen((open) => !open)}
+          className="flex w-full items-center justify-between border-2 border-ink bg-canvas px-3 py-2 text-left text-xs font-bold uppercase tracking-widest text-ink transition hover:bg-sunken"
+        >
+          Demo login credentials
+          <ChevronDown size={14} className={credentialsOpen ? "rotate-180 transition" : "transition"} />
+        </button>
+
+        {credentialsOpen && (
+          <div className="absolute left-0 right-0 z-20 mt-1 border-2 border-ink bg-surface shadow-md">
+            {demoCredentials.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => fillCredentials(account)}
+                className="flex w-full items-center justify-between gap-3 border-b border-ink/10 px-3 py-2 text-left transition last:border-b-0 hover:bg-canvas"
+              >
+                <span>
+                  <span className="block text-xs font-bold text-ink">{account.role}</span>
+                  <span className="block text-[11px] text-ink3">{account.name}</span>
+                </span>
+                <span className="font-mono text-[10px] text-signal">{account.email}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-ink2">
@@ -65,6 +166,8 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
             autoComplete="email"
             required
             placeholder="name@company.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
             className="af-input"
           />
         </div>
@@ -85,6 +188,8 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
             autoComplete="current-password"
             required
             placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             className="af-input"
           />
         </div>
@@ -114,3 +219,4 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
     </div>
   );
 }
+

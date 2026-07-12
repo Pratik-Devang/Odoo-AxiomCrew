@@ -2,17 +2,28 @@ import { requireRole } from "@/lib/require-role";
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { AllocationService } from "@/lib/services/allocation-service";
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const auth = await requireRole(Object.values(UserRole));
   if (auth.response) return auth.response;
 
   const allocationId = Number(params.id);
-  if (!Number.isInteger(allocationId) || allocationId <= 0) {
-    return NextResponse.json(
-      { error: "Invalid allocation ID", code: "VALIDATION_FAILED" },
-      { status: 400 }
-    );
+  if (isNaN(allocationId)) {
+    return NextResponse.json({ error: "Invalid allocation ID", code: "VALIDATION_FAILED" }, { status: 400 });
+  }
+
+  const allocation = await prisma.allocation.findUnique({
+    where: { id: allocationId },
+  });
+
+  if (!allocation) {
+    return NextResponse.json({ error: "Allocation not found", code: "ALLOCATION_NOT_FOUND" }, { status: 404 });
+  }
+
+  const isManager = auth.user.role === UserRole.ADMIN || auth.user.role === UserRole.ASSET_MANAGER;
+  if (!isManager && allocation.employeeId !== auth.user.id) {
+    return NextResponse.json({ error: "Access Denied: You do not have permission to return this allocation.", code: "FORBIDDEN" }, { status: 403 });
   }
 
   try {
