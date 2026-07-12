@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+<<<<<<< HEAD
 import {
   LayoutDashboard,
   Package,
@@ -32,10 +33,25 @@ const navItems = [
 
 const adminNavItems = [
   { label: "Org Setup", href: "/org", icon: Building2 },
+=======
+import type { UserRole } from "@prisma/client";
+
+const navItems: Array<{ label: string; href: string; roles?: UserRole[] }> = [
+  { label: "Dashboard", href: "/" },
+  { label: "Organization Setup", href: "/organization-setup", roles: ["ADMIN"] },
+  { label: "Assets", href: "/assets" },
+  { label: "Allocation & Transfer", href: "/allocation-transfer" },
+  { label: "Resource Booking", href: "/resource-booking" },
+  { label: "Maintenance", href: "/maintenance" },
+  { label: "Audit", href: "/audit" },
+  { label: "Reports", href: "/reports" },
+  { label: "Notifications", href: "/notifications" },
+>>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
 ] as const;
 
 const shelllessRoutes = ["/login", "/signup", "/forgot-password"];
 
+<<<<<<< HEAD
 const roleMeta: Record<string, { label: string; className: string }> = {
   ADMIN: { label: "Admin", className: "bg-violet text-white" },
   ASSET_MANAGER: { label: "Asset Manager", className: "bg-signal text-white" },
@@ -44,6 +60,9 @@ const roleMeta: Record<string, { label: string; className: string }> = {
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
+=======
+export function AppShell({ children, role }: { children: ReactNode; role: UserRole | null }) {
+>>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
   const pathname = usePathname();
 
   if (shelllessRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
@@ -68,6 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold tracking-tight text-white">AssetFlow</span>
         </div>
 
+<<<<<<< HEAD
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
@@ -92,6 +112,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+=======
+          <nav aria-label="Primary navigation" className="space-y-1">
+            {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+>>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
 
           {/* Admin section */}
           <hr className="my-3 border-white/10" />
