@@ -296,6 +296,22 @@ export class BookingService {
           };
         }
 
+        // Check for pending lifecycle request
+        const pendingRequest = await tx.lifecycleRequest.findFirst({
+          where: {
+            assetId: data.assetId,
+            status: "PENDING",
+          },
+        });
+
+        if (pendingRequest) {
+          return {
+            error: `Asset has a pending lifecycle request (${pendingRequest.requestedStatus.toLowerCase()}) and cannot be booked.`,
+            code: "PENDING_LIFECYCLE_REQUEST",
+            status: 400,
+          };
+        }
+
         // Check for overlaps (standard SQL overlap: A.start < B.end AND A.end > B.start)
         const conflict = await tx.booking.findFirst({
           where: {

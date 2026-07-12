@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Zap,
   LogOut,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ const navItems = [
 
 const adminNavItems = [
   { label: "Org Setup", href: "/org", icon: Building2 },
+  { label: "Lifecycle Requests", href: "/admin/lifecycle-requests", icon: Shield },
 ] as const;
 
 const roleMeta: Record<string, { label: string; chipClass: string }> = {

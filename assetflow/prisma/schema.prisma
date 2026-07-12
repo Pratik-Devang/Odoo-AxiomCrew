@@ -28,6 +28,8 @@ model User {
   transferRequestsDecided     TransferRequest[]    @relation("TransferDecidedBy")
   transferRequestsSent        TransferRequest[]    @relation("TransferFromEmployee")
   transferRequestsReceived    TransferRequest[]    @relation("TransferToEmployee")
+  lifecycleRequestsRequested  LifecycleRequest[]   @relation("LifecycleRequestedBy")
+  lifecycleRequestsReviewed   LifecycleRequest[]   @relation("LifecycleReviewedBy")
   department                  Department?          @relation("DepartmentMembers", fields: [departmentId], references: [id])
 
   @@index([departmentId])
@@ -46,6 +48,7 @@ model Department {
   head               User?        @relation("DepartmentHead", fields: [headId], references: [id])
   parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
   childDepartments   Department[] @relation("DepartmentHierarchy")
+  ownedAssets        Asset[]      @relation("AssetOwnerDepartment")
   members            User[]       @relation("DepartmentMembers")
 
   @@index([headId])
@@ -74,19 +77,23 @@ model Asset {
   status                    AssetStatus          @default(AVAILABLE)
   currentHolderId           Int?
   currentHolderDepartmentId Int?
+  departmentId              Int
   createdAt                 DateTime             @default(now())
   allocations               Allocation[]
   category                  AssetCategory        @relation(fields: [categoryId], references: [id])
+  department                Department           @relation("AssetOwnerDepartment", fields: [departmentId], references: [id])
   currentHolderDepartment   Department?          @relation("AssetCurrentHolderDepartment", fields: [currentHolderDepartmentId], references: [id])
   currentHolder             User?                @relation("AssetCurrentHolder", fields: [currentHolderId], references: [id])
   auditItems                AuditItem[]
   bookings                  Booking[]
   maintenanceRequests       MaintenanceRequest[]
   transferRequests          TransferRequest[]
+  lifecycleRequests         LifecycleRequest[]
 
   @@index([categoryId])
   @@index([currentHolderId])
   @@index([currentHolderDepartmentId])
+  @@index([departmentId])
   @@index([status])
 }
 
@@ -309,4 +316,36 @@ enum NotificationType {
   TRANSFER_APPROVED
   OVERDUE_RETURN
   AUDIT_DISCREPANCY
+  LIFECYCLE_REQUESTED
+  LIFECYCLE_APPROVED
+  LIFECYCLE_REJECTED
+}
+
+enum LifecycleRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LifecycleRequest {
+  id              Int                    @id @default(autoincrement())
+  assetId         Int
+  requestedById   Int
+  requestedStatus AssetStatus
+  reason          String
+  notes           String?
+  status          LifecycleRequestStatus @default(PENDING)
+  adminMessage    String?
+  reviewedById    Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime               @default(now())
+
+  asset       Asset  @relation(fields: [assetId], references: [id])
+  requestedBy User   @relation("LifecycleRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?  @relation("LifecycleReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([assetId])
+  @@index([requestedById])
+  @@index([reviewedById])
+  @@index([status])
 }

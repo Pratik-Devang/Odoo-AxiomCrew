@@ -112,6 +112,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
+    // Verify not retired, disposed, lost
+    if (["RETIRED", "DISPOSED", "LOST"].includes(asset.status)) {
+      return NextResponse.json(
+        { error: `Asset is currently ${asset.status.toLowerCase()} and cannot undergo maintenance.` },
+        { status: 400 }
+      );
+    }
+
+    // Check for pending lifecycle request
+    const pendingRequest = await prisma.lifecycleRequest.findFirst({
+      where: {
+        assetId,
+        status: "PENDING",
+      },
+    });
+
+    if (pendingRequest) {
+      return NextResponse.json(
+        { error: `Asset has a pending lifecycle request (${pendingRequest.requestedStatus.toLowerCase()}) and cannot undergo maintenance.` },
+        { status: 400 }
+      );
+    }
+
     const maintenanceRequest = await prisma.maintenanceRequest.create({
       data: {
         assetId,

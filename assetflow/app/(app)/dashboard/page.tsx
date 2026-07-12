@@ -54,6 +54,27 @@ type DashboardPayload = {
     timestamp: string;
     text: string;
   }>;
+  user: {
+    id: number;
+    name: string;
+    role: string;
+    departmentId: number | null;
+  };
+  lifecycleWidgets: {
+    pendingRequests: number;
+    approvedToday: number;
+    rejectedToday: number;
+    trends: {
+      retired: number;
+      lost: number;
+      disposed: number;
+    };
+    myPendingRequests: number;
+    approvedRequests: number;
+    rejectedRequests: number;
+    departmentLifecycleRequests: number;
+    pendingDepartmentRequests: number;
+  };
 };
 
 const formatNumber = (value: number) => new Intl.NumberFormat("en").format(value);
@@ -222,6 +243,8 @@ export default function DashboardPage() {
           )}
 
           <InsightBand data={data} />
+
+          <LifecycleWidgets data={data} />
 
           <div className="overflow-hidden rounded-md border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -486,3 +509,129 @@ function formatRelativeTime(timestamp: string) {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+function LifecycleWidgets({ data }: { data: DashboardPayload }) {
+  const role = data.user.role;
+  const widgets = data.lifecycleWidgets;
+
+  if (role === "ADMIN") {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* Admin Lifecycle Requests widget */}
+        <div className="border border-border bg-surface p-5 rounded-md flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink3">Lifecycle Requests</p>
+                <h3 className="mt-1 text-sm font-bold text-ink">Administrative Workflow Approval</h3>
+              </div>
+              <Link href="/admin/lifecycle-requests" className="inline-flex items-center gap-1.5 border border-ink text-xs font-bold px-3 py-1.5 rounded hover:bg-canvas transition">
+                Review <ArrowRight size={13} />
+              </Link>
+            </div>
+            
+            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+              <div className="bg-canvas border border-ink/5 p-3 rounded-lg">
+                <span className="block text-[10px] font-bold text-ink3 uppercase">Pending</span>
+                <span className="block text-2xl font-bold text-warn mt-1">{widgets.pendingRequests}</span>
+              </div>
+              <div className="bg-canvas border border-ink/5 p-3 rounded-lg">
+                <span className="block text-[10px] font-bold text-ink3 uppercase font-medium">Approved Today</span>
+                <span className="block text-2xl font-bold text-go mt-1">{widgets.approvedToday}</span>
+              </div>
+              <div className="bg-canvas border border-ink/5 p-3 rounded-lg">
+                <span className="block text-[10px] font-bold text-ink3 uppercase font-medium">Rejected Today</span>
+                <span className="block text-2xl font-bold text-danger mt-1">{widgets.rejectedToday}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Trends Widget */}
+        <div className="border border-border bg-surface p-5 rounded-md flex flex-col justify-between h-full">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink3">Lifecycle Trends</p>
+            <h3 className="mt-1 text-sm font-bold text-ink">Historical requests by target status</h3>
+            
+            <div className="mt-6 space-y-3">
+              <div>
+                <div className="flex justify-between text-xs font-medium text-ink2 mb-1">
+                  <span>Retirement (Retired)</span>
+                  <span>{widgets.trends.retired} requests</span>
+                </div>
+                <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                  <div className="h-full bg-ink" style={{ width: `${widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed > 0 ? (widgets.trends.retired / (widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed)) * 100 : 0}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs font-medium text-ink2 mb-1">
+                  <span>Reported Lost</span>
+                  <span>{widgets.trends.lost} requests</span>
+                </div>
+                <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                  <div className="h-full bg-danger" style={{ width: `${widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed > 0 ? (widgets.trends.lost / (widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed)) * 100 : 0}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs font-medium text-ink2 mb-1">
+                  <span>Disposal (Disposed)</span>
+                  <span>{widgets.trends.disposed} requests</span>
+                </div>
+                <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                  <div className="h-full bg-warn" style={{ width: `${widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed > 0 ? (widgets.trends.disposed / (widgets.trends.retired + widgets.trends.lost + widgets.trends.disposed)) * 100 : 0}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (role === "ASSET_MANAGER") {
+    return (
+      <div className="border border-border bg-surface p-5 rounded-md">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink3">My Lifecycle Requests</p>
+        <h3 className="mt-1 text-sm font-bold text-ink">Requests submitted by you</h3>
+        
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="bg-canvas border border-ink/5 p-4 rounded-lg">
+            <span className="block text-[10px] font-bold text-ink3 uppercase">My Pending</span>
+            <span className="block text-3xl font-bold text-warn mt-1">{widgets.myPendingRequests}</span>
+          </div>
+          <div className="bg-canvas border border-ink/5 p-4 rounded-lg">
+            <span className="block text-[10px] font-bold text-ink3 uppercase">Approved</span>
+            <span className="block text-3xl font-bold text-go mt-1">{widgets.approvedRequests}</span>
+          </div>
+          <div className="bg-canvas border border-ink/5 p-4 rounded-lg">
+            <span className="block text-[10px] font-bold text-ink3 uppercase">Rejected</span>
+            <span className="block text-3xl font-bold text-danger mt-1">{widgets.rejectedRequests}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (role === "DEPARTMENT_HEAD") {
+    return (
+      <div className="border border-border bg-surface p-5 rounded-md">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink3">Department Lifecycle requests</p>
+        <h3 className="mt-1 text-sm font-bold text-ink">Department Lifecycle Overview</h3>
+        
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+          <div className="bg-canvas border border-ink/5 p-4 rounded-lg">
+            <span className="block text-[10px] font-bold text-ink3 uppercase">Total Department Requests</span>
+            <span className="block text-3xl font-bold text-signal mt-1">{widgets.departmentLifecycleRequests}</span>
+          </div>
+          <div className="bg-canvas border border-ink/5 p-4 rounded-lg">
+            <span className="block text-[10px] font-bold text-ink3 uppercase">Pending Department Requests</span>
+            <span className="block text-3xl font-bold text-warn mt-1">{widgets.pendingDepartmentRequests}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+

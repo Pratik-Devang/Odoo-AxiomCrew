@@ -64,6 +64,22 @@ export class AllocationService {
           };
         }
 
+        // Check if there is a pending lifecycle request
+        const pendingRequest = await tx.lifecycleRequest.findFirst({
+          where: {
+            assetId: data.assetId,
+            status: "PENDING",
+          },
+        });
+
+        if (pendingRequest) {
+          return {
+            error: `Asset has a pending lifecycle request (${pendingRequest.requestedStatus.toLowerCase()}) and cannot be allocated.`,
+            code: "PENDING_LIFECYCLE_REQUEST",
+            status: 400,
+          };
+        }
+
         // Check active allocation (Source of Truth)
         const activeAllocation = await tx.allocation.findFirst({
           where: {

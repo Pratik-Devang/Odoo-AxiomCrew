@@ -283,6 +283,27 @@ export async function GET() {
     .sort((a, b) => (isBefore(new Date(a.timestamp), new Date(b.timestamp)) ? 1 : -1))
     .slice(0, 10);
 
+  // Lifecycle requests dashboard widgets metrics
+  const pendingRequests = await prisma.lifecycleRequest.count({ where: { status: "PENDING" } });
+  const approvedToday = await prisma.lifecycleRequest.count({ where: { status: "APPROVED", reviewedAt: { gte: today } } });
+  const rejectedToday = await prisma.lifecycleRequest.count({ where: { status: "REJECTED", reviewedAt: { gte: today } } });
+
+  const retiredCount = await prisma.lifecycleRequest.count({ where: { requestedStatus: "RETIRED" } });
+  const lostCount = await prisma.lifecycleRequest.count({ where: { requestedStatus: "LOST" } });
+  const disposedCount = await prisma.lifecycleRequest.count({ where: { requestedStatus: "DISPOSED" } });
+
+  const myPendingRequests = await prisma.lifecycleRequest.count({ where: { status: "PENDING", requestedById: user.id } });
+  const approvedRequests = await prisma.lifecycleRequest.count({ where: { status: "APPROVED", requestedById: user.id } });
+  const rejectedRequests = await prisma.lifecycleRequest.count({ where: { status: "REJECTED", requestedById: user.id } });
+
+  const departmentLifecycleRequests = user.departmentId
+    ? await prisma.lifecycleRequest.count({ where: { requestedBy: { departmentId: user.departmentId } } })
+    : 0;
+
+  const pendingDepartmentRequests = user.departmentId
+    ? await prisma.lifecycleRequest.count({ where: { status: "PENDING", requestedBy: { departmentId: user.departmentId } } })
+    : 0;
+
   return NextResponse.json({
     kpis: {
       assetsAvailable,
@@ -318,5 +339,26 @@ export async function GET() {
     },
     overdueReturns,
     recentActivity: activity,
+    user: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      departmentId: user.departmentId,
+    },
+    lifecycleWidgets: {
+      pendingRequests,
+      approvedToday,
+      rejectedToday,
+      trends: {
+        retired: retiredCount,
+        lost: lostCount,
+        disposed: disposedCount,
+      },
+      myPendingRequests,
+      approvedRequests,
+      rejectedRequests,
+      departmentLifecycleRequests,
+      pendingDepartmentRequests,
+    },
   });
 }

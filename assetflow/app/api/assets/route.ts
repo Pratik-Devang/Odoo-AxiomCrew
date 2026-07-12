@@ -15,6 +15,7 @@ const createAssetSchema = z.object({
   condition: z.string().trim().min(2).max(80),
   location: z.string().trim().min(2).max(160),
   isBookable: z.boolean().default(false),
+  departmentId: z.coerce.number().int().positive(),
 });
 
 const assetSelect = {
@@ -30,7 +31,9 @@ const assetSelect = {
   isBookable: true,
   status: true,
   currentHolderDepartmentId: true,
+  departmentId: true,
   category: { select: { id: true, name: true } },
+  department: { select: { id: true, name: true } },
   currentHolder: { select: { id: true, name: true, department: { select: { id: true, name: true } } } },
   currentHolderDepartment: { select: { id: true, name: true } },
   allocations: {
@@ -107,6 +110,7 @@ export async function GET(request: Request) {
     }
     andFilters.push({
       OR: [
+        { departmentId: auth.user.departmentId },
         { currentHolderDepartmentId: auth.user.departmentId },
         { currentHolder: { departmentId: auth.user.departmentId } },
       ],

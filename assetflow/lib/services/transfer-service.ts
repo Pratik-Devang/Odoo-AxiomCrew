@@ -30,6 +30,31 @@ export class TransferService {
           };
         }
 
+        // Verify not retired, disposed, lost
+        if (["RETIRED", "DISPOSED", "LOST"].includes(asset.status)) {
+          return {
+            error: `Asset is currently ${asset.status.toLowerCase()} and cannot be transferred.`,
+            code: "ASSET_INVALID_STATUS",
+            status: 400,
+          };
+        }
+
+        // Check for pending lifecycle request
+        const pendingRequest = await tx.lifecycleRequest.findFirst({
+          where: {
+            assetId: data.assetId,
+            status: "PENDING",
+          },
+        });
+
+        if (pendingRequest) {
+          return {
+            error: `Asset has a pending lifecycle request (${pendingRequest.requestedStatus.toLowerCase()}) and cannot be transferred.`,
+            code: "PENDING_LIFECYCLE_REQUEST",
+            status: 400,
+          };
+        }
+
         // Active allocation is source of truth
         const activeAllocation = await tx.allocation.findFirst({
           where: {

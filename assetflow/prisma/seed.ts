@@ -700,7 +700,36 @@ async function main() {
     },
   ];
 
-  await prisma.asset.createMany({ data: assetRows });
+  const assetRowsWithDept = assetRows.map(row => {
+    let deptId = row.currentHolderDepartmentId;
+    if (!deptId) {
+      if (row.categoryId === categoryId["IT Equipment"]) {
+        deptId = technology.id;
+      } else if (row.categoryId === categoryId["Facilities"]) {
+        deptId = facilities.id;
+      } else if (row.categoryId === categoryId["Vehicles"]) {
+        if (row.name.includes("Facilities") || row.name.includes("Utility")) {
+          deptId = facilities.id;
+        } else {
+          deptId = operations.id;
+        }
+      } else if (row.categoryId === categoryId["Furniture"]) {
+        deptId = operations.id;
+      } else {
+        if (row.location.includes("Technology")) {
+          deptId = technology.id;
+        } else {
+          deptId = operations.id;
+        }
+      }
+    }
+    return {
+      ...row,
+      departmentId: deptId,
+    };
+  });
+
+  await prisma.asset.createMany({ data: assetRowsWithDept });
   const assets = await prisma.asset.findMany();
   const assetByTag = Object.fromEntries(assets.map((asset: Asset) => [asset.tag, asset]));
 

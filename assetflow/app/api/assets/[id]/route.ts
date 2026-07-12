@@ -24,6 +24,7 @@ const detailSelect = {
   status: true,
   createdAt: true,
   category: { select: { id: true, name: true } },
+  department: { select: { id: true, name: true } },
   currentHolder: { select: { id: true, name: true, email: true, department: { select: { id: true, name: true } } } },
   currentHolderDepartment: { select: { id: true, name: true } },
   allocations: {
@@ -38,6 +39,13 @@ const detailSelect = {
     include: {
       raisedBy: { select: { id: true, name: true } },
       approvedBy: { select: { id: true, name: true } },
+    },
+  },
+  lifecycleRequests: {
+    orderBy: { createdAt: "desc" },
+    include: {
+      requestedBy: { select: { id: true, name: true } },
+      reviewedBy: { select: { id: true, name: true } },
     },
   },
 } satisfies Prisma.AssetSelect;

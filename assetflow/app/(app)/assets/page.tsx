@@ -30,7 +30,9 @@ type AssetRow = {
   isBookable: boolean;
   status: AssetStatus;
   currentHolderDepartmentId: number | null;
+  departmentId: number;
   category: { id: number; name: string };
+  department: { id: number; name: string } | null;
   currentHolder: { id: number; name: string; department: { id: number; name: string } | null } | null;
   currentHolderDepartment: { id: number; name: string } | null;
 };
@@ -55,6 +57,20 @@ type AssetDetail = AssetRow & {
     status: string;
     technicianName: string | null;
     raisedBy: { name: string };
+  }>;
+  lifecycleRequests: Array<{
+    id: number;
+    requestedById: number;
+    requestedStatus: string;
+    reason: string;
+    notes: string | null;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    adminMessage: string | null;
+    reviewedById: number | null;
+    reviewedAt: string | null;
+    createdAt: string;
+    requestedBy: { id: number; name: string };
+    reviewedBy: { id: number; name: string } | null;
   }>;
 };
 
@@ -84,6 +100,7 @@ const statusToBadge: Record<AssetStatus, BadgeStatus> = {
 const emptyForm = {
   name: "",
   categoryId: "",
+  departmentId: "",
   serialNumber: "",
   acquisitionDate: new Date().toISOString().slice(0, 10),
   acquisitionCost: "",
@@ -105,7 +122,7 @@ export default function AssetsPage() {
   const [error, setError] = useState("");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ id: number; name: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: number; name: string; role: string; departmentId: number | null } | null>(null);
 
   useEffect(() => {
     if (searchParams.get("register") === "1") {
@@ -131,14 +148,19 @@ export default function AssetsPage() {
       const departmentsPayload = (await departmentsResponse.json()) as { departments: Department[] };
       let userPayload = null;
       if (userResponse.ok) {
-        userPayload = (await userResponse.json()) as { user: { id: number; name: string; role: string } };
+        userPayload = (await userResponse.json()) as { user: { id: number; name: string; role: string; departmentId: number | null } };
       }
 
       if (!cancelled) {
         setCategories(categoriesPayload.categories);
         setDepartments(departmentsPayload.departments);
         if (userPayload) {
-          setCurrentUser(userPayload.user);
+          setCurrentUser({
+            id: userPayload.user.id,
+            name: userPayload.user.name,
+            role: userPayload.user.role,
+            departmentId: userPayload.user.departmentId ?? null,
+          });
         }
       }
     }
@@ -310,6 +332,7 @@ export default function AssetsPage() {
       {registerOpen && (
         <RegisterAssetModal
           categories={activeCategories}
+          departments={departments}
           onClose={() => setRegisterOpen(false)}
           onCreated={(asset) => {
             setAssets((current) => [asset, ...current].sort((a, b) => a.category.name.localeCompare(b.category.name) || a.tag.localeCompare(b.tag)));
@@ -321,6 +344,7 @@ export default function AssetsPage() {
       {selectedId && (
         <AssetDetailDrawer
           assetId={selectedId}
+          currentUser={currentUser}
           onClose={() => setSelectedId(null)}
           onUpdated={(asset) => {
             setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
@@ -360,10 +384,12 @@ function FilterSelect({
 
 function RegisterAssetModal({
   categories,
+  departments,
   onClose,
   onCreated,
 }: {
   categories: Category[];
+  departments: Department[];
   onClose: () => void;
   onCreated: (asset: AssetRow) => void;
 }) {
@@ -383,6 +409,7 @@ function RegisterAssetModal({
         body: JSON.stringify({
           ...form,
           categoryId: Number(form.categoryId),
+          departmentId: Number(form.departmentId),
           acquisitionCost: Number(form.acquisitionCost),
         }),
       });
@@ -439,6 +466,21 @@ function RegisterAssetModal({
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Owner Department">
+            <select
+              required
+              value={form.departmentId}
+              onChange={(event) => setForm({ ...form, departmentId: event.target.value })}
+              className="af-input"
+            >
+              <option value="">Select department</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
                 </option>
               ))}
             </select>
@@ -514,10 +556,12 @@ function RegisterAssetModal({
 
 function AssetDetailDrawer({
   assetId,
+  currentUser,
   onClose,
   onUpdated,
 }: {
   assetId: number;
+  currentUser: { id: number; name: string; role: string; departmentId: number | null } | null;
   onClose: () => void;
   onUpdated: (asset: AssetRow) => void;
 }) {
@@ -527,40 +571,37 @@ function AssetDetailDrawer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
+  const [showLifecycleModal, setShowLifecycleModal] = useState(false);
+  const [lifecycleAction, setLifecycleAction] = useState<"RETIRED" | "LOST" | "DISPOSED" | null>(null);
+  const [reason, setReason] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lifecycleSubmitting, setLifecycleSubmitting] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState("");
+  const [lifecycleSuccess, setLifecycleSuccess] = useState("");
 
-    async function loadAsset() {
-      setLoading(true);
+  async function loadAsset() {
+    setLoading(true);
+    try {
       const response = await fetch(`/api/assets/${assetId}`, { cache: "no-store" });
-
       if (!response.ok) {
         throw new Error("Unable to load asset detail");
       }
-
       const payload = (await response.json()) as { asset: AssetDetail };
-
-      if (!cancelled) {
-        setAsset(payload.asset);
-        setEdit({
-          name: payload.asset.name,
-          location: payload.asset.location,
-          condition: payload.asset.condition,
-        });
-      }
-    }
-
-    loadAsset()
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load asset detail");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      setAsset(payload.asset);
+      setEdit({
+        name: payload.asset.name,
+        location: payload.asset.location,
+        condition: payload.asset.condition,
       });
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : "Unable to load asset detail");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    loadAsset();
   }, [assetId]);
 
   async function saveEdits() {
@@ -588,6 +629,53 @@ function AssetDetailDrawer({
     }
   }
 
+  async function handleLifecycleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!lifecycleAction || !reason.trim()) {
+      setLifecycleError("Reason is required.");
+      return;
+    }
+
+    setLifecycleSubmitting(true);
+    setLifecycleError("");
+    setLifecycleSuccess("");
+
+    try {
+      const response = await fetch("/api/lifecycle-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetId,
+          requestedStatus: lifecycleAction,
+          reason,
+          notes,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to submit request.");
+      }
+
+      setLifecycleSuccess("Lifecycle request submitted successfully.");
+      setReason("");
+      setNotes("");
+      setShowLifecycleModal(false);
+      await loadAsset();
+    } catch (err: any) {
+      setLifecycleError(err.message || "Failed to submit request.");
+    } finally {
+      setLifecycleSubmitting(false);
+    }
+  }
+
+  const pendingRequest = asset?.lifecycleRequests?.find((r) => r.status === "PENDING");
+
+  const canRequestLifecycle =
+    currentUser &&
+    (currentUser.role === "ASSET_MANAGER" ||
+      (currentUser.role === "DEPARTMENT_HEAD" && asset && asset.departmentId === currentUser.departmentId));
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink/40" onClick={onClose}>
       <div
@@ -600,6 +688,11 @@ function AssetDetailDrawer({
             <div className="mt-2 flex items-center gap-3">
               {asset && <AssetTag tag={asset.tag} />}
               {asset && <Badge status={statusToBadge[asset.status]} />}
+              {pendingRequest && (
+                <span className="af-status-chip bg-warn_bg text-warn before:bg-warn font-semibold">
+                  Pending {pendingRequest.requestedStatus.toLowerCase()}
+                </span>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="border border-ink p-1 text-ink2 hover:bg-sunken">
@@ -616,11 +709,15 @@ function AssetDetailDrawer({
           ) : asset ? (
             <div className="space-y-6">
               {error && <div className="border border-danger bg-danger_bg px-3 py-2 text-xs text-danger">{error}</div>}
+              {lifecycleSuccess && (
+                <div className="border border-go bg-go_bg px-3 py-2 text-xs text-go font-bold">{lifecycleSuccess}</div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Name">
                   <input value={edit.name} onChange={(event) => setEdit({ ...edit, name: event.target.value })} className="af-input" />
                 </FormField>
                 <ReadOnlyField label="Category" value={asset.category.name} />
+                <ReadOnlyField label="Owner Department" value={asset.department?.name || "No department"} />
                 <ReadOnlyField label="Serial Number" value={asset.serialNumber} />
                 <ReadOnlyField label="Acquisition Date" value={format(new Date(asset.acquisitionDate), "MMM d, yyyy")} />
                 <ReadOnlyField label="Acquisition Cost" value={String(asset.acquisitionCost)} />
@@ -648,10 +745,75 @@ function AssetDetailDrawer({
                 </button>
               </div>
 
+              {canRequestLifecycle && (
+                <div className="border-2 border-ink bg-canvas/30 p-4 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-ink3 block">Asset Lifecycle</span>
+                    <span className="text-xs text-ink2 mt-0.5 block">Request retirement, disposal, or report lost</span>
+                  </div>
+                  <div className="relative inline-flex items-center gap-2 border-2 border-ink bg-surface px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-ink">
+                    Actions
+                    <select
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                          setLifecycleAction(val as "RETIRED" | "LOST" | "DISPOSED");
+                          setShowLifecycleModal(true);
+                          e.target.value = "";
+                        }
+                      }}
+                      className="appearance-none bg-transparent pr-5 text-xs font-semibold outline-none text-ink2"
+                      disabled={["RETIRED", "LOST", "DISPOSED"].includes(asset.status) || !!pendingRequest}
+                    >
+                      <option value="">Choose action...</option>
+                      <option value="RETIRED">Request Retirement</option>
+                      <option value="LOST">Report Lost</option>
+                      <option value="DISPOSED">Request Disposal</option>
+                    </select>
+                    <ChevronDown size={12} className="pointer-events-none absolute right-2 text-ink3" />
+                  </div>
+                </div>
+              )}
+
+              <HistorySection title="Lifecycle History">
+                {asset.lifecycleRequests && asset.lifecycleRequests.length > 0 ? (
+                  <div className="space-y-3">
+                    {asset.lifecycleRequests.map((request) => (
+                      <div key={request.id} className="border border-border bg-canvas p-3 text-xs text-ink2 rounded-lg space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-ink">
+                            Request: {request.requestedStatus}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            request.status === 'PENDING' ? 'bg-warn_bg text-warn border border-warn/15' : request.status === 'APPROVED' ? 'bg-go_bg text-go border border-go/15' : 'bg-danger_bg text-danger border border-danger/15'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <p className="text-ink text-[11px] mt-1"><span className="font-semibold text-ink3">Reason:</span> &ldquo;{request.reason}&rdquo;</p>
+                        {request.notes && <p className="text-ink2 text-[11px]"><span className="font-semibold text-ink3">Notes:</span> &ldquo;{request.notes}&rdquo;</p>}
+                        <div className="text-[10px] text-ink3 mt-1.5">
+                          Requested by {request.requestedBy.name} on {format(new Date(request.createdAt), "MMM d, yyyy")}
+                          {request.reviewedAt && ` · Reviewed by ${request.reviewedBy?.name || "Admin"} on ${format(new Date(request.reviewedAt), "MMM d, yyyy")}`}
+                        </div>
+                        {request.adminMessage && (
+                          <div className="mt-2 p-2 bg-surface rounded border border-ink/5 text-ink text-[11px]">
+                            <span className="font-bold text-ink3 text-[9px] uppercase tracking-wider block mb-0.5">Admin Comment</span>
+                            &ldquo;{request.adminMessage}&rdquo;
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-ink3">No lifecycle history yet.</p>
+                )}
+              </HistorySection>
+
               <HistorySection title="Allocation History">
                 {asset.allocations.length > 0 ? (
                   asset.allocations.map((allocation) => (
-                    <div key={allocation.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2">
+                    <div key={allocation.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2 rounded-lg">
                       <p className="font-bold text-ink">
                         {allocation.employee?.name ?? allocation.department?.name ?? "Unassigned"} · {allocation.status}
                       </p>
@@ -670,7 +832,7 @@ function AssetDetailDrawer({
               <HistorySection title="Maintenance History">
                 {asset.maintenanceRequests.length > 0 ? (
                   asset.maintenanceRequests.map((request) => (
-                    <div key={request.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2">
+                    <div key={request.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2 rounded-lg">
                       <p className="font-bold text-ink">
                         {format(new Date(request.raisedAt), "MMM d, yyyy")} · {request.status.replaceAll("_", " ")}
                       </p>
@@ -687,6 +849,95 @@ function AssetDetailDrawer({
           )}
         </div>
       </div>
+
+      {showLifecycleModal && asset && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowLifecycleModal(false)}>
+          <div className="border-2 border-ink bg-surface max-w-sm w-full p-6 space-y-4 rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center border-b border-ink/10 pb-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-ink">
+                Request {lifecycleAction === "RETIRED" ? "Retirement" : lifecycleAction === "LOST" ? "Lost Status" : "Disposal"}
+              </h3>
+              <button
+                onClick={() => setShowLifecycleModal(false)}
+                className="text-ink3 hover:text-ink transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {lifecycleError && (
+              <div className="border border-danger bg-danger_bg px-3 py-2 text-xs text-danger font-semibold">
+                {lifecycleError}
+              </div>
+            )}
+
+            <form onSubmit={handleLifecycleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-ink3 mb-1">
+                  Asset
+                </label>
+                <div className="border border-border bg-canvas px-3 py-2 text-xs text-ink font-semibold rounded">
+                  {asset.tag} - {asset.name}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-ink3 mb-1">
+                  Lifecycle Action
+                </label>
+                <div className="border border-border bg-canvas px-3 py-2 text-xs text-ink uppercase font-semibold rounded">
+                  {lifecycleAction === "RETIRED" ? "Retire" : lifecycleAction === "LOST" ? "Report Lost" : "Dispose"}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-ink3 mb-1.5">
+                  Reason <span className="text-danger font-bold">* required</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Enter reason..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="af-input w-full text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-ink3 mb-1.5">
+                  Additional Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Enter notes..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="af-input w-full text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-ink/10">
+                <button
+                  type="button"
+                  onClick={() => setShowLifecycleModal(false)}
+                  className="border-2 border-ink bg-canvas px-4 py-2 text-xs font-bold text-ink hover:bg-canvas transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={lifecycleSubmitting}
+                  className="af-btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+                >
+                  {lifecycleSubmitting && <Loader2 size={12} className="animate-spin" />}
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
