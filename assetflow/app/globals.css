@@ -142,6 +142,112 @@
     border-radius: 9999px;
     background: var(--color-go);
   }
+
+  .af-flow-node {
+    min-width: 164px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: var(--radius-md, 8px);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 12px;
+    backdrop-filter: blur(8px);
+  }
+
+  .af-flow-path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.28);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-dasharray: 7 8;
+  }
+
+  .af-flow-dot {
+    fill: var(--color-accent);
+    filter: drop-shadow(0 0 8px rgba(107, 95, 228, 0.55));
+  }
+
+  .af-auth-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+    padding: 12px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .af-auth-orb {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 9999px;
+    filter: blur(44px);
+    opacity: 0.24;
+    pointer-events: none;
+  }
+
+  .af-auth-orb-violet {
+    left: -72px;
+    top: 18%;
+    background: var(--color-accent);
+  }
+
+  .af-auth-orb-sage {
+    bottom: 12%;
+    right: 8%;
+    background: var(--color-go);
+    opacity: 0.16;
+  }
+
+  .af-auth-asset-card {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-md, 8px);
+    background: rgba(255, 255, 255, 0.07);
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12);
+  }
+
+  .af-auth-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+  }
+
+  .af-auth-status-dot-go {
+    background: var(--color-go);
+    box-shadow: 0 0 12px rgba(58, 158, 111, 0.72);
+  }
+
+  .af-auth-status-dot-warn {
+    background: var(--color-warn);
+    box-shadow: 0 0 12px rgba(212, 134, 10, 0.72);
+  }
+
+  .af-auth-status-dot-signal {
+    background: var(--color-accent);
+    box-shadow: 0 0 12px rgba(107, 95, 228, 0.72);
+  }
+
+  .af-auth-live-dot {
+    position: relative;
+    display: inline-flex;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--color-go);
+    box-shadow: 0 0 12px rgba(58, 158, 111, 0.65);
+  }
+
+  .af-auth-live-dot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--color-go);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -169,6 +275,168 @@
 
   .af-live-pulse::before {
     animation: af-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes af-node-pulse {
+    0%,
+    100% {
+      border-color: rgba(255, 255, 255, 0.20);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    50% {
+      border-color: rgba(238, 236, 251, 0.42);
+      background: rgba(255, 255, 255, 0.09);
+    }
+  }
+
+  @keyframes af-flow-1 {
+    0%,
+    8% {
+      offset-distance: 0%;
+      opacity: 0;
+    }
+    16%,
+    35% {
+      opacity: 1;
+    }
+    43%,
+    100% {
+      offset-distance: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes af-flow-2 {
+    0%,
+    20% {
+      offset-distance: 0%;
+      opacity: 0;
+    }
+    28%,
+    47% {
+      opacity: 1;
+    }
+    55%,
+    100% {
+      offset-distance: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes af-flow-3 {
+    0%,
+    38% {
+      offset-distance: 0%;
+      opacity: 0;
+    }
+    46%,
+    65% {
+      opacity: 1;
+    }
+    73%,
+    100% {
+      offset-distance: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes af-flow-4 {
+    0%,
+    56% {
+      offset-distance: 0%;
+      opacity: 0;
+    }
+    64%,
+    84% {
+      opacity: 1;
+    }
+    92%,
+    100% {
+      offset-distance: 100%;
+      opacity: 0;
+    }
+  }
+
+  .af-flow-node {
+    animation: af-node-pulse 6s ease-in-out infinite;
+  }
+
+  .af-flow-dot-1 {
+    offset-path: path("M112 84 C178 84 188 88 248 110");
+    animation: af-flow-1 6s ease-in-out infinite;
+  }
+
+  .af-flow-dot-2 {
+    offset-path: path("M112 124 C112 172 116 190 152 214");
+    animation: af-flow-2 6s ease-in-out infinite;
+  }
+
+  .af-flow-dot-3 {
+    offset-path: path("M302 190 C262 190 244 206 212 230");
+    animation: af-flow-3 6s ease-in-out infinite;
+  }
+
+  .af-flow-dot-4 {
+    offset-path: path("M160 258 C214 300 258 302 326 278");
+    animation: af-flow-4 6s ease-in-out infinite;
+  }
+
+  @keyframes af-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .af-auth-toast {
+    animation: af-toast-in 200ms ease-out both;
+  }
+
+  .af-btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  @keyframes af-auth-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(18px, -14px, 0);
+    }
+  }
+
+  @keyframes af-auth-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .af-auth-orb {
+    animation: af-auth-drift 9s ease-in-out infinite;
+  }
+
+  .af-auth-orb-sage {
+    animation-duration: 11s;
+    animation-direction: reverse;
+  }
+
+  .af-auth-asset-card {
+    opacity: 0;
+    animation: af-auth-card-in 520ms ease-out forwards;
+  }
+
+  .af-auth-live-dot::before {
+    animation: af-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }
 
