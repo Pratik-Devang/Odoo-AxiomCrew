@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,15 +19,51 @@ const demoCredentials = [
     password: "Password123!",
   },
   {
+    role: "Department Head",
+    name: "Marcus Reed",
+    email: "marcus.reed@assetflow.local",
+    password: "Password123!",
+  },
+  {
     role: "Asset Manager",
     name: "Elena Torres",
     email: "elena.torres@assetflow.local",
     password: "Password123!",
   },
   {
+    role: "Asset Manager",
+    name: "Noah Williams",
+    email: "noah.williams@assetflow.local",
+    password: "Password123!",
+  },
+  {
     role: "Employee",
     name: "Mia Chen",
     email: "mia.chen@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Liam Patel",
+    email: "liam.patel@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Sofia Martinez",
+    email: "sofia.martinez@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ethan Brown",
+    email: "ethan.brown@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Isabella Davis",
+    email: "isabella.davis@assetflow.local",
     password: "Password123!",
   },
 ];
