@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import { AssetTag } from "@/components/asset-tag";
-import { Plus, Check, X, AlertOctagon, User, Wrench, Loader2 } from "lucide-react";
+import { Plus, Check, X, AlertOctagon, User, Wrench, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface UserProfile {
   id: number;
@@ -68,6 +68,7 @@ export default function MaintenancePage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [toastMsg, setToastMsg] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [resolvedCollapsed, setResolvedCollapsed] = useState(false);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -240,13 +241,49 @@ export default function MaintenancePage() {
           <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none flex-1 min-h-[500px]">
             {columns.map((col) => {
               const colTickets = requests.filter((r) => r.status === col.id);
+              if (col.id === "RESOLVED" && resolvedCollapsed) {
+                return (
+                  <div
+                    key={col.id}
+                    onClick={() => setResolvedCollapsed(false)}
+                    className="w-12 shrink-0 bg-sunken hover:bg-canvas rounded-lg py-4 flex flex-col items-center cursor-pointer border border-border/50 shadow-sm min-h-[400px] transition-colors"
+                    title="Click to expand Resolved column"
+                  >
+                    <button className="text-ink3 hover:text-ink mb-4">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="flex flex-col items-center gap-2 [writing-mode:vertical-lr] rotate-180">
+                      <span className="text-xs font-bold text-ink2 uppercase tracking-wider whitespace-nowrap">
+                        {col.label}
+                      </span>
+                      <span className="bg-surface border border-border px-1.5 py-0.5 rounded text-[10px] font-semibold text-ink3 rotate-90 mt-3">
+                        {colTickets.length}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={col.id} className="w-[310px] shrink-0 bg-sunken rounded-lg p-3 flex flex-col max-h-[calc(100vh-16rem)] border border-border/50 shadow-sm">
                   <div className="flex items-center justify-between mb-4 px-1 shrink-0">
-                    <SectionHeader title={col.label} className="mb-0 text-sm font-semibold text-ink2" />
-                    <span className="bg-surface border border-border px-2 py-0.5 rounded text-[10px] font-semibold text-ink3">
-                      {colTickets.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-ink2 uppercase tracking-wider">{col.label}</span>
+                      <span className="bg-surface border border-border px-2 py-0.5 rounded text-[10px] font-semibold text-ink3">
+                        {colTickets.length}
+                      </span>
+                    </div>
+                    {col.id === "RESOLVED" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setResolvedCollapsed(true);
+                        }}
+                        className="text-ink3 hover:text-ink p-1 rounded hover:bg-canvas transition-colors"
+                        title="Collapse Column"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
