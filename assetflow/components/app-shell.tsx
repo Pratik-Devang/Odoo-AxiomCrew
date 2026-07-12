@@ -97,8 +97,11 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
 
           {navItems
             .filter((item) => {
-              if (item.href === "/audits" || item.href === "/reports") {
+              if (item.href === "/audits") {
                 return activeRole === "ADMIN" || activeRole === "ASSET_MANAGER";
+              }
+              if (item.href === "/reports") {
+                return activeRole === "ADMIN" || activeRole === "ASSET_MANAGER" || activeRole === "DEPARTMENT_HEAD";
               }
               return true;
             })

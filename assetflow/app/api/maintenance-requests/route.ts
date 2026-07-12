@@ -29,6 +29,18 @@ export async function GET(request: Request) {
       }
     }
 
+    if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+      if (auth.user.departmentId === null) {
+        return NextResponse.json({ requests: [] }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+      }
+      where.OR = [
+        { asset: { currentHolderDepartmentId: auth.user.departmentId } },
+        { asset: { currentHolder: { departmentId: auth.user.departmentId } } },
+      ];
+    } else if (auth.user.role === UserRole.EMPLOYEE) {
+      where.raisedById = auth.user.id;
+    }
+
     const requests = await prisma.maintenanceRequest.findMany({
       where,
       include: {
