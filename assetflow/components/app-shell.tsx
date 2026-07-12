@@ -17,7 +17,7 @@ const navItems = [
   { label: "Notifications", href: "/notifications" },
 ] as const;
 
-const shelllessRoutes = ["/login", "/signup"];
+const shelllessRoutes = ["/login", "/signup", "/forgot-password"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
