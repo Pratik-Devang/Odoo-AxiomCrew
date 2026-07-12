@@ -2,6 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Local database
+
+Run `docker compose up -d` to start Postgres locally, then `npx prisma migrate dev` and `npx prisma db seed`.
+
+If port `5432` is already used by another PostgreSQL installation, stop that service before starting the container.
+
 First, run the development server:
 
 ```bash
