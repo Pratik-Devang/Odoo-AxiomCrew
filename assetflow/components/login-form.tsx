@@ -66,7 +66,78 @@ const demoCredentials = [
     email: "isabella.davis@assetflow.local",
     password: "Password123!",
   },
-];
+  {
+    role: "Department Head",
+    name: "Nora Evans",
+    email: "nora.evans@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Owen Brooks",
+    email: "owen.brooks@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Grace Kim",
+    email: "grace.kim@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Asset Manager",
+    name: "Victor Stone",
+    email: "victor.stone@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Hannah Lee",
+    email: "hannah.lee@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Arjun Mehta",
+    email: "arjun.mehta@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Chloe Park",
+    email: "chloe.park@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Diego Ramirez",
+    email: "diego.ramirez@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Farah Khan",
+    email: "farah.khan@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ben Carter",
+    email: "ben.carter@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Leah Thompson",
+    email: "leah.thompson@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ravi Nair",
+    email: "ravi.nair@assetflow.local",
+    password: "Password123!",
+  },];
 
 export function LoginForm({ redirectTo = "/dashboard", accountCreated = false }) {
   const router = useRouter();
