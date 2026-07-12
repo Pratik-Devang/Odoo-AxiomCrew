@@ -1,7 +1,7 @@
 "use client";
 
-import { Pencil, Plus, UserCog, X } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { ChevronDown, Pencil, Plus, UserCog, X } from "lucide-react";
+import { Fragment, useCallback, useEffect, useState, type FormEvent } from "react";
 import { Badge } from "@/components/badge";
 
 type RecordStatus = "ACTIVE" | "INACTIVE";
@@ -19,6 +19,15 @@ type Department = {
 
 type Category = { id: number; name: string; status: RecordStatus };
 
+type AssetLifecycleStatus =
+  | "AVAILABLE"
+  | "ALLOCATED"
+  | "RESERVED"
+  | "UNDER_MAINTENANCE"
+  | "LOST"
+  | "RETIRED"
+  | "DISPOSED";
+
 type User = {
   id: number;
   name: string;
@@ -27,6 +36,53 @@ type User = {
   department: { id: number; name: string } | null;
   role: UserRole;
   status: RecordStatus;
+  heldAssets: Array<{
+    id: number;
+    tag: string;
+    name: string;
+    status: AssetLifecycleStatus;
+    location: string;
+    category: { name: string };
+  }>;
+  allocations: Array<{
+    id: number;
+    status: string;
+    allocatedAt: string;
+    expectedReturnDate: string | null;
+    returnedAt: string | null;
+    asset: { tag: string; name: string; status: AssetLifecycleStatus };
+    department: { name: string } | null;
+  }>;
+  bookings: Array<{
+    id: number;
+    status: string;
+    startTime: string;
+    endTime: string;
+    asset: { tag: string; name: string };
+  }>;
+  maintenanceRequestsRaised: Array<{
+    id: number;
+    issueDescription: string;
+    priority: string;
+    status: string;
+    raisedAt: string;
+    resolvedAt: string | null;
+    asset: { tag: string; name: string };
+  }>;
+  transferRequestsSent: Array<{
+    id: number;
+    status: string;
+    requestedAt: string;
+    asset: { tag: string; name: string };
+    toEmployee: { name: string };
+  }>;
+  transferRequestsReceived: Array<{
+    id: number;
+    status: string;
+    requestedAt: string;
+    asset: { tag: string; name: string };
+    fromEmployee: { name: string };
+  }>;
 };
 
 type Tab = "departments" | "categories" | "employees";
@@ -55,6 +111,7 @@ export function OrganizationSetup() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     setError("");
@@ -302,24 +359,41 @@ export function OrganizationSetup() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink/20">
-                {users.map((user) => (
-                  <tr key={user.id} className="text-ink2 transition hover:bg-canvas">
-                    <td className="px-5 py-4 font-semibold text-ink">{user.name}</td>
-                    <td className="px-5 py-4 text-ink2">{user.email}</td>
-                    <td className="px-5 py-4">{user.department?.name ?? "—"}</td>
-                    <td className="px-5 py-4">{formatRole(user.role)}</td>
-                    <td className="px-5 py-4"><StatusBadge status={user.status} /></td>
-                    <td className="px-5 py-4 text-right">
-                      {user.role === "ADMIN" ? (
-                        <span className="text-xs text-ink2">Seeded admin</span>
-                      ) : (
-                        <ActionButton onClick={() => { setModalError(""); setModal({ kind: "employee", item: user }); }}>
-                          <UserCog size={14} /> Promote
-                        </ActionButton>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {users.map((user) => {
+                  const isExpanded = expandedUserId === user.id;
+
+                  return (
+                    <Fragment key={user.id}>
+                      <tr className="text-ink2 transition hover:bg-canvas">
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                            className="inline-flex items-center gap-2 font-semibold text-ink transition hover:text-go"
+                            aria-expanded={isExpanded}
+                          >
+                            <ChevronDown size={15} className={isExpanded ? "rotate-180 transition" : "transition"} />
+                            {user.name}
+                          </button>
+                        </td>
+                        <td className="px-5 py-4 text-ink2">{user.email}</td>
+                        <td className="px-5 py-4">{user.department?.name ?? "—"}</td>
+                        <td className="px-5 py-4">{formatRole(user.role)}</td>
+                        <td className="px-5 py-4"><StatusBadge status={user.status} /></td>
+                        <td className="px-5 py-4 text-right">
+                          {user.role === "ADMIN" ? (
+                            <span className="text-xs text-ink2">Seeded admin</span>
+                          ) : (
+                            <ActionButton onClick={() => { setModalError(""); setModal({ kind: "employee", item: user }); }}>
+                              <UserCog size={14} /> Promote
+                            </ActionButton>
+                          )}
+                        </td>
+                      </tr>
+                      {isExpanded ? <EmployeeDetailsRow user={user} /> : null}
+                    </Fragment>
+                  );
+                })}
                 {!users.length ? <EmptyRow columns={6} label="No employees found" /> : null}
               </tbody>
             </table>
@@ -359,6 +433,152 @@ export function OrganizationSetup() {
   );
 }
 
+function EmployeeDetailsRow({ user }: { user: User }) {
+  const transferItems = [
+    ...user.transferRequestsSent.map((transfer) => ({
+      id: `sent-${transfer.id}`,
+      text: `${transfer.asset.tag} ${transfer.asset.name} → to ${transfer.toEmployee.name}`,
+      meta: `Requested ${formatDate(transfer.requestedAt)}`,
+      status: transfer.status,
+    })),
+    ...user.transferRequestsReceived.map((transfer) => ({
+      id: `received-${transfer.id}`,
+      text: `${transfer.asset.tag} ${transfer.asset.name} ← from ${transfer.fromEmployee.name}`,
+      meta: `Requested ${formatDate(transfer.requestedAt)}`,
+      status: transfer.status,
+    })),
+  ].slice(0, 5);
+
+  return (
+    <tr className="bg-canvas/70">
+      <td colSpan={6} className="border-t border-ink/20 px-5 py-5">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <DetailCard title="Currently allocated assets" emptyLabel="No assets currently allocated.">
+            {user.heldAssets.map((asset) => (
+              <DetailItem
+                key={asset.id}
+                title={`${asset.tag} · ${asset.name}`}
+                meta={`${asset.category.name} · ${asset.location}`}
+                status={<AssetStatusBadge status={asset.status} />}
+              />
+            ))}
+          </DetailCard>
+
+          <DetailCard title="Allocation history" emptyLabel="No allocation history.">
+            {user.allocations.map((allocation) => (
+              <DetailItem
+                key={allocation.id}
+                title={`${allocation.asset.tag} · ${allocation.asset.name}`}
+                meta={`${formatStatusText(allocation.status)} · Allocated ${formatDate(allocation.allocatedAt)}${allocation.expectedReturnDate ? ` · Due ${formatDate(allocation.expectedReturnDate)}` : ""}`}
+                status={<TinyStatus label={allocation.status} />}
+              />
+            ))}
+          </DetailCard>
+
+          <DetailCard title="Bookings" emptyLabel="No bookings found.">
+            {user.bookings.map((booking) => (
+              <DetailItem
+                key={booking.id}
+                title={`${booking.asset.tag} · ${booking.asset.name}`}
+                meta={`${formatDateTime(booking.startTime)} → ${formatDateTime(booking.endTime)}`}
+                status={<TinyStatus label={booking.status} />}
+              />
+            ))}
+          </DetailCard>
+
+          <DetailCard title="Maintenance raised" emptyLabel="No maintenance requests raised.">
+            {user.maintenanceRequestsRaised.map((request) => (
+              <DetailItem
+                key={request.id}
+                title={`${request.asset.tag} · ${request.asset.name}`}
+                meta={`${formatStatusText(request.priority)} priority · ${request.issueDescription}`}
+                status={<TinyStatus label={request.status} />}
+              />
+            ))}
+          </DetailCard>
+
+          <DetailCard title="Transfer requests" emptyLabel="No transfer requests.">
+            {transferItems.map((transfer) => (
+              <DetailItem
+                key={transfer.id}
+                title={transfer.text}
+                meta={transfer.meta}
+                status={<TinyStatus label={transfer.status} />}
+              />
+            ))}
+          </DetailCard>
+
+          <div className="rounded-xl border border-ink/15 bg-surface p-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-ink3">Summary</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <SummaryPill label="Assets" value={user.heldAssets.length} />
+              <SummaryPill label="Allocations" value={user.allocations.length} />
+              <SummaryPill label="Bookings" value={user.bookings.length} />
+              <SummaryPill label="Maintenance" value={user.maintenanceRequestsRaised.length} />
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function DetailCard({ title, emptyLabel, children }: { title: string; emptyLabel: string; children: React.ReactNode }) {
+  const items = Array.isArray(children) ? children.filter(Boolean) : children;
+  const isEmpty = Array.isArray(items) ? items.length === 0 : !items;
+
+  return (
+    <div className="rounded-xl border border-ink/15 bg-surface p-4">
+      <p className="mb-3 text-xs font-bold uppercase tracking-widest text-ink3">{title}</p>
+      <div className="space-y-2">
+        {isEmpty ? <p className="text-xs text-ink3">{emptyLabel}</p> : items}
+      </div>
+    </div>
+  );
+}
+
+function DetailItem({ title, meta, status }: { title: string; meta: string; status: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg bg-canvas px-3 py-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-ink">{title}</p>
+        <p className="mt-0.5 line-clamp-2 text-xs text-ink3">{meta}</p>
+      </div>
+      <div className="shrink-0">{status}</div>
+    </div>
+  );
+}
+
+function SummaryPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-canvas px-3 py-2">
+      <p className="text-lg font-bold text-ink">{value}</p>
+      <p className="text-[10px] uppercase tracking-widest text-ink3">{label}</p>
+    </div>
+  );
+}
+
+function AssetStatusBadge({ status }: { status: AssetLifecycleStatus }) {
+  const statusMap: Record<AssetLifecycleStatus, Parameters<typeof Badge>[0]["status"]> = {
+    AVAILABLE: "available",
+    ALLOCATED: "allocated",
+    RESERVED: "reserved",
+    UNDER_MAINTENANCE: "maintenance",
+    LOST: "lost",
+    RETIRED: "retired",
+    DISPOSED: "disposed",
+  };
+
+  return <Badge status={statusMap[status]} />;
+}
+
+function TinyStatus({ label }: { label: string }) {
+  return (
+    <span className="inline-flex rounded-full border border-ink/20 bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-ink2">
+      {formatStatusText(label)}
+    </span>
+  );
+}
 function DepartmentFields({ department, departments, users }: { department?: Department; departments: Department[]; users: User[] }) {
   return (
     <>
@@ -465,3 +685,22 @@ function formatRole(role: UserRole) {
   return role.split("_").map((word) => word[0] + word.slice(1).toLowerCase()).join(" ");
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatStatusText(value: string) {
+  return value
+    .split("_")
+    .map((word) => word[0] + word.slice(1).toLowerCase())
+    .join(" ");
+}
