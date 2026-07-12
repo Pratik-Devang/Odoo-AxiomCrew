@@ -1,15 +1,32 @@
+version: '3.8'
+
 services:
   postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
+    image: postgres:18-alpine
+    container_name: assetflow-db
+    restart: always
     environment:
-      POSTGRES_USER: assetflow
-      POSTGRES_PASSWORD: assetflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
       POSTGRES_DB: assetflow
     ports:
       - "5432:5432"
     volumes:
-      - assetflow_pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assetflow-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:Password123!@postgres:5432/assetflow?schema=public"
+      JWT_SECRET: "super-secret-key-12345"
+    depends_on:
+      - postgres
 
 volumes:
-  assetflow_pgdata:
+  pgdata:

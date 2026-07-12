@@ -34,8 +34,6 @@ const adminNavItems = [
   { label: "Org Setup", href: "/org", icon: Building2 },
 ] as const;
 
-const shelllessRoutes = ["/login", "/signup", "/forgot-password"];
-
 const roleMeta: Record<string, { label: string; className: string }> = {
   ADMIN: { label: "Admin", className: "bg-violet text-white" },
   ASSET_MANAGER: { label: "Asset Manager", className: "bg-signal text-white" },
@@ -59,9 +57,6 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
     }
   };
 
-  if (shelllessRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
-    return <>{children}</>;
-  }
 
   const isActive = (href: string) =>
     href === "/dashboard"
