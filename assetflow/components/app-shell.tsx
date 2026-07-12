@@ -46,6 +46,19 @@ const roleMeta: Record<string, { label: string; className: string }> = {
 export function AppShell({ children, role }: { children: ReactNode; role: UserRole | null }) {
   const pathname = usePathname();
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      if (response.ok) {
+        window.location.href = "/login";
+      }
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
   if (shelllessRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
     return <>{children}</>;
   }
@@ -138,7 +151,11 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
                 {roleMeta[activeRole].label}
               </span>
             </div>
-            <button className="text-white/40 transition hover:text-white" title="Sign out">
+            <button 
+              onClick={handleLogout}
+              className="text-white/40 transition hover:text-white" 
+              title="Sign out"
+            >
               <LogOut size={14} />
             </button>
           </div>
