@@ -37,7 +37,7 @@ type ModalState =
   | null;
 
 const fieldClass =
-  "w-full rounded-lg border border-gray-700 bg-[#111315] px-3 py-2.5 text-sm text-gray-100 outline-none transition focus:border-green-500 focus:ring-1 focus:ring-green-500/30";
+  "w-full rounded-md border-2 border-ink bg-surface px-3 py-2.5 text-sm text-ink outline-none transition focus:border-signal";
 
 async function readJson<T>(response: Response): Promise<T> {
   const data = (await response.json()) as T & { error?: string };
@@ -178,7 +178,7 @@ export function OrganizationSetup() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b border-gray-800">
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b-2 border-ink">
         <div className="flex gap-7" role="tablist" aria-label="Organization setup sections">
           {([
             ["departments", "Departments"],
@@ -193,8 +193,8 @@ export function OrganizationSetup() {
               onClick={() => setActiveTab(value)}
               className={`border-b-2 px-1 pb-3 text-sm font-medium transition ${
                 activeTab === value
-                  ? "border-green-500 text-green-400"
-                  : "border-transparent text-gray-400 hover:text-gray-200"
+                  ? "border-go text-go"
+                  : "border-transparent text-ink3 hover:text-ink"
               }`}
             >
               {label}
@@ -206,7 +206,7 @@ export function OrganizationSetup() {
           <button
             type="button"
             onClick={openAddModal}
-            className="mb-3 inline-flex items-center gap-2 rounded-md border border-green-500/50 bg-af-green px-3.5 py-2 text-sm font-medium text-green-100 transition hover:border-green-400 hover:text-green-400"
+            className="mb-3 inline-flex items-center gap-2 af-btn-primary"
           >
             <Plus size={15} /> Add
           </button>
@@ -214,18 +214,18 @@ export function OrganizationSetup() {
       </div>
 
       {error ? (
-        <div role="alert" className="mb-5 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div role="alert" className="mb-5 border-2 border-danger bg-danger_bg px-4 py-3 text-sm font-semibold text-danger">
           {error}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="py-16 text-center text-sm text-gray-500">Loading organization data…</div>
+        <div className="py-16 text-center text-sm text-ink3">Loading organization data…</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-800">
+        <div className="overflow-x-auto rounded-xl border-2 border-ink bg-surface">
           {activeTab === "departments" ? (
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-[#111315] text-xs uppercase tracking-wider text-gray-500">
+              <thead className="bg-ink text-xs uppercase tracking-wider text-white/60">
                 <tr>
                   <th className="px-5 py-3.5 font-medium">Department</th>
                   <th className="px-5 py-3.5 font-medium">Head</th>
@@ -234,10 +234,10 @@ export function OrganizationSetup() {
                   <th className="px-5 py-3.5 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-ink/20">
                 {departments.map((department) => (
-                  <tr key={department.id} className="text-gray-300 transition hover:bg-white/[0.02]">
-                    <td className="px-5 py-4 font-medium text-gray-100">{department.name}</td>
+                  <tr key={department.id} className="text-ink2 transition hover:bg-canvas">
+                    <td className="px-5 py-4 font-semibold text-ink">{department.name}</td>
                     <td className="px-5 py-4">{department.head?.name ?? "—"}</td>
                     <td className="px-5 py-4">{department.parentDepartment?.name ?? "—"}</td>
                     <td className="px-5 py-4"><StatusBadge status={department.status} /></td>
@@ -260,17 +260,17 @@ export function OrganizationSetup() {
 
           {activeTab === "categories" ? (
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="bg-[#111315] text-xs uppercase tracking-wider text-gray-500">
+              <thead className="bg-ink text-xs uppercase tracking-wider text-white/60">
                 <tr>
                   <th className="px-5 py-3.5 font-medium">Category Name</th>
                   <th className="px-5 py-3.5 font-medium">Status</th>
                   <th className="px-5 py-3.5 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-ink/20">
                 {categories.map((category) => (
-                  <tr key={category.id} className="text-gray-300 transition hover:bg-white/[0.02]">
-                    <td className="px-5 py-4 font-medium text-gray-100">{category.name}</td>
+                  <tr key={category.id} className="text-ink2 transition hover:bg-canvas">
+                    <td className="px-5 py-4 font-semibold text-ink">{category.name}</td>
                     <td className="px-5 py-4"><StatusBadge status={category.status} /></td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
@@ -291,7 +291,7 @@ export function OrganizationSetup() {
 
           {activeTab === "employees" ? (
             <table className="w-full min-w-[850px] text-left text-sm">
-              <thead className="bg-[#111315] text-xs uppercase tracking-wider text-gray-500">
+              <thead className="bg-ink text-xs uppercase tracking-wider text-white/60">
                 <tr>
                   <th className="px-5 py-3.5 font-medium">Name</th>
                   <th className="px-5 py-3.5 font-medium">Email</th>
@@ -301,17 +301,17 @@ export function OrganizationSetup() {
                   <th className="px-5 py-3.5 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-ink/20">
                 {users.map((user) => (
-                  <tr key={user.id} className="text-gray-300 transition hover:bg-white/[0.02]">
-                    <td className="px-5 py-4 font-medium text-gray-100">{user.name}</td>
-                    <td className="px-5 py-4 text-gray-400">{user.email}</td>
+                  <tr key={user.id} className="text-ink2 transition hover:bg-canvas">
+                    <td className="px-5 py-4 font-semibold text-ink">{user.name}</td>
+                    <td className="px-5 py-4 text-ink2">{user.email}</td>
                     <td className="px-5 py-4">{user.department?.name ?? "—"}</td>
                     <td className="px-5 py-4">{formatRole(user.role)}</td>
                     <td className="px-5 py-4"><StatusBadge status={user.status} /></td>
                     <td className="px-5 py-4 text-right">
                       {user.role === "ADMIN" ? (
-                        <span className="text-xs text-gray-600">Seeded admin</span>
+                        <span className="text-xs text-ink2">Seeded admin</span>
                       ) : (
                         <ActionButton onClick={() => { setModalError(""); setModal({ kind: "employee", item: user }); }}>
                           <UserCog size={14} /> Promote
@@ -327,7 +327,7 @@ export function OrganizationSetup() {
         </div>
       )}
 
-      <p className="mt-auto pt-8 text-xs text-gray-500">
+      <p className="mt-auto pt-8 text-xs text-ink3">
         Editing a department here also drives the picklist in Screen 4 &amp; 5
       </p>
 
@@ -342,13 +342,13 @@ export function OrganizationSetup() {
               <EmployeeFields user={modal.item} departments={departments} />
             ) : null}
 
-            {modalError ? <p role="alert" className="text-sm text-red-400">{modalError}</p> : null}
+            {modalError ? <p role="alert" className="text-sm font-semibold text-danger">{modalError}</p> : null}
 
-            <div className="flex justify-end gap-3 border-t border-gray-800 pt-5">
-              <button type="button" onClick={() => setModal(null)} className="rounded-md border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-white/5">
+            <div className="flex justify-end gap-3 border-t border-ink/20 pt-5">
+              <button type="button" onClick={() => setModal(null)} className="af-btn-secondary">
                 Cancel
               </button>
-              <button type="submit" disabled={isSaving} className="rounded-md border border-green-500/50 bg-af-green px-4 py-2 text-sm font-medium text-green-100 hover:border-green-400 hover:text-green-400 disabled:opacity-60">
+              <button type="submit" disabled={isSaving} className="af-btn-primary disabled:opacity-60">
                 {isSaving ? "Saving…" : "Save"}
               </button>
             </div>
@@ -392,9 +392,9 @@ function CategoryFields({ category }: { category?: Category }) {
 function EmployeeFields({ user, departments }: { user: User; departments: Department[] }) {
   return (
     <>
-      <div className="rounded-lg border border-gray-800 bg-[#111315] px-4 py-3">
-        <p className="text-sm font-medium text-gray-100">{user.name}</p>
-        <p className="mt-0.5 text-xs text-gray-500">{user.email}</p>
+      <div className="border-2 border-ink bg-canvas px-4 py-3">
+        <p className="text-sm font-semibold text-ink">{user.name}</p>
+        <p className="mt-0.5 text-xs text-ink3">{user.email}</p>
       </div>
       <Field label="Role">
         <select name="role" defaultValue={user.role} className={fieldClass}>
@@ -426,16 +426,16 @@ function StatusField({ defaultValue = "ACTIVE" }: { defaultValue?: RecordStatus 
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-xs font-medium text-gray-300">{label}</span>{children}</label>;
+  return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-ink2">{label}</span>{children}</label>;
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-af-panel p-6 shadow-2xl">
+      <div className="w-full max-w-md border-2 border-ink bg-surface p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"><X size={18} /></button>
+          <h2 className="text-lg font-semibold text-ink">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 text-ink3 hover:bg-canvas hover:text-ink"><X size={18} /></button>
         </div>
         {children}
       </div>
@@ -444,7 +444,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 function ActionButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 rounded-md border border-gray-700 px-2.5 py-1.5 text-xs text-gray-300 transition hover:border-green-500/50 hover:bg-af-green hover:text-green-400">{children}</button>;
+  return <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 border border-ink px-2.5 py-1.5 text-xs font-semibold text-ink2 transition hover:border-go hover:bg-go_bg hover:text-go">{children}</button>;
 }
 
 function StatusBadge({ status }: { status: RecordStatus }) {
@@ -452,7 +452,7 @@ function StatusBadge({ status }: { status: RecordStatus }) {
 }
 
 function EmptyRow({ columns, label }: { columns: number; label: string }) {
-  return <tr><td colSpan={columns} className="px-5 py-12 text-center text-sm text-gray-600">{label}</td></tr>;
+  return <tr><td colSpan={columns} className="px-5 py-12 text-center text-sm text-ink2">{label}</td></tr>;
 }
 
 function modalTitle(modal: NonNullable<ModalState>) {
@@ -464,3 +464,4 @@ function modalTitle(modal: NonNullable<ModalState>) {
 function formatRole(role: UserRole) {
   return role.split("_").map((word) => word[0] + word.slice(1).toLowerCase()).join(" ");
 }
+
