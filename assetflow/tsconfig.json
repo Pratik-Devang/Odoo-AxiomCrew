@@ -36,6 +36,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "noEmit": false
+    }
+  },
   "exclude": [
     "node_modules"
   ]
