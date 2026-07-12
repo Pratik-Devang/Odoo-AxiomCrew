@@ -45,6 +45,29 @@ async function main() {
     },
   });
 
+  const finance = await prisma.department.create({
+    data: { name: "Finance", status: RecordStatus.ACTIVE },
+  });
+  const humanResources = await prisma.department.create({
+    data: { name: "Human Resources", status: RecordStatus.ACTIVE },
+  });
+  const procurement = await prisma.department.create({
+    data: {
+      name: "Procurement",
+      status: RecordStatus.ACTIVE,
+      parentDepartmentId: operations.id,
+    },
+  });
+  const security = await prisma.department.create({
+    data: {
+      name: "Security",
+      status: RecordStatus.ACTIVE,
+      parentDepartmentId: facilities.id,
+    },
+  });
+  const legalCompliance = await prisma.department.create({
+    data: { name: "Legal & Compliance", status: RecordStatus.ACTIVE },
+  });
   const passwordHash = await bcrypt.hash("Password123!", 12);
   const users = await Promise.all([
     prisma.user.create({
@@ -146,9 +169,129 @@ async function main() {
         status: RecordStatus.ACTIVE,
       },
     }),
+    prisma.user.create({
+      data: {
+        name: "Nora Evans",
+        email: "nora.evans@assetflow.local",
+        passwordHash,
+        role: UserRole.DEPARTMENT_HEAD,
+        departmentId: finance.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Owen Brooks",
+        email: "owen.brooks@assetflow.local",
+        passwordHash,
+        role: UserRole.DEPARTMENT_HEAD,
+        departmentId: humanResources.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Grace Kim",
+        email: "grace.kim@assetflow.local",
+        passwordHash,
+        role: UserRole.DEPARTMENT_HEAD,
+        departmentId: procurement.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Victor Stone",
+        email: "victor.stone@assetflow.local",
+        passwordHash,
+        role: UserRole.ASSET_MANAGER,
+        departmentId: security.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Hannah Lee",
+        email: "hannah.lee@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: finance.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Arjun Mehta",
+        email: "arjun.mehta@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: finance.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Chloe Park",
+        email: "chloe.park@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: humanResources.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Diego Ramirez",
+        email: "diego.ramirez@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: procurement.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Farah Khan",
+        email: "farah.khan@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: procurement.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Ben Carter",
+        email: "ben.carter@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: security.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Leah Thompson",
+        email: "leah.thompson@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: legalCompliance.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Ravi Nair",
+        email: "ravi.nair@assetflow.local",
+        passwordHash,
+        role: UserRole.EMPLOYEE,
+        departmentId: legalCompliance.id,
+        status: RecordStatus.ACTIVE,
+      },
+    }),
   ]);
 
-  const [admin, technologyHead, operationsHead, assetManager, , mia, liam, sofia, ethan] = users;
+  const [admin, technologyHead, operationsHead, assetManager, , mia, liam, sofia, ethan, , financeHead, hrHead, procurementHead] = users;
 
   await Promise.all([
     prisma.department.update({
@@ -158,6 +301,18 @@ async function main() {
     prisma.department.update({
       where: { id: operations.id },
       data: { headId: operationsHead.id },
+    }),
+    prisma.department.update({
+      where: { id: finance.id },
+      data: { headId: financeHead.id },
+    }),
+    prisma.department.update({
+      where: { id: humanResources.id },
+      data: { headId: hrHead.id },
+    }),
+    prisma.department.update({
+      where: { id: procurement.id },
+      data: { headId: procurementHead.id },
     }),
   ]);
 
@@ -643,7 +798,7 @@ async function main() {
     ],
   });
 
-  console.log("AssetFlow seed completed: 10 users, 3 departments, 5 categories, and 30 assets.");
+  console.log("AssetFlow seed completed: 22 users, 8 departments, 5 categories, and 30 assets.");
 }
 
 main()
