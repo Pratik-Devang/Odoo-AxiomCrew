@@ -605,7 +605,7 @@ function DayView({
               key={ev.id}
               style={{
                 top: layout.top,
-                height: layout.height,
+                height: `max(${layout.height}, 46px)`,
               }}
               onClick={() => onEventClick(ev)}
               onMouseEnter={(e) => {
@@ -692,10 +692,10 @@ function WeekView({
 }) {
   return (
     <div className="border-2 border-ink bg-surface rounded-xl overflow-x-auto">
-      <table className="w-full min-w-[950px] border-collapse">
+      <table className="w-full min-w-[1120px] border-collapse">
         <thead>
           <tr className="bg-canvas border-b-2 border-ink text-center">
-            <th className="af-th w-48 text-left py-3 border-r border-ink/20">Resource</th>
+            <th className="af-th w-56 text-left py-3 border-r border-ink/20">Resource</th>
             {weekDays.map((day) => (
               <th key={day.toISOString()} className="af-th py-3 border-r border-ink/10">
                 <span className="block text-[10px] text-ink3 uppercase font-medium">{format(day, "eee")}</span>
@@ -742,19 +742,23 @@ function WeekView({
                 return (
                   <td
                     key={day.toISOString()}
-                    className="p-1 border-r border-ink/10 last:border-0 align-top min-w-[110px] relative bg-canvas/5 h-28"
+                    className="p-1.5 border-r border-ink/10 last:border-0 align-top min-w-[130px] relative bg-canvas/5 h-40"
                   >
-                    <div className="w-full h-full relative border border-dashed border-ink/5 rounded p-0.5">
+                    <div className="w-full h-full relative border border-dashed border-ink/5 rounded-md p-1">
                       {cellEvents.map((ev) => {
                         const layout = getLayoutProps(ev.start, ev.end);
                         const isBooking = ev.type === "BOOKING";
+                        const maintenanceIndex = cellEvents
+                          .filter((item) => item.type === "MAINTENANCE")
+                          .findIndex((item) => item.id === ev.id);
+                        const maintenanceTop = 6 + Math.max(0, maintenanceIndex) * 46;
 
                         return (
                           <div
                             key={ev.id}
                             style={{
-                              top: layout.top,
-                              height: layout.height,
+                              top: isBooking ? layout.top : `${maintenanceTop}px`,
+                              height: isBooking ? `max(${layout.height}, 28px)` : "40px",
                             }}
                             onClick={() => onEventClick(ev)}
                             onMouseEnter={(e) => {
@@ -765,14 +769,17 @@ function WeekView({
                               setHoveredEvent(null);
                               setHoverPosition(null);
                             }}
-                            className={`absolute left-0.5 right-0.5 border rounded-lg px-1.5 py-1 text-[8px] font-bold leading-tight cursor-pointer overflow-hidden shadow-sm flex flex-col justify-between transition-all hover:scale-[1.01] hover:brightness-95 select-none ${
+                            className={`absolute left-1 right-1 border rounded-md px-2 py-1.5 text-[9px] font-semibold leading-tight cursor-pointer overflow-hidden flex flex-col justify-center transition-all hover:brightness-95 select-none ${
                               isBooking
                                 ? "bg-signal/15 border-signal text-signal"
                                 : "bg-warn_bg border-warn text-warn"
                             }`}
                           >
-                            <div className="truncate mb-0.5">{ev.title}</div>
-                            <div className="font-mono text-[7px] opacity-85 leading-none">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {!isBooking && <Wrench size={10} className="shrink-0" />}
+                              <span className="truncate">{isBooking ? ev.title : "Maintenance"}</span>
+                            </div>
+                            <div className="mt-0.5 font-mono text-[8px] opacity-85 leading-none">
                               {format(ev.start, "HH:mm")}–{format(ev.end, "HH:mm")}
                             </div>
                           </div>

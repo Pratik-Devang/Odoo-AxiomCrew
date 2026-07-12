@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { UserRole } from "@prisma/client";
 import {
   LayoutDashboard,
@@ -15,6 +15,8 @@ import {
   BarChart3,
   Bell,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   Zap,
   LogOut,
   type LucideIcon,
@@ -57,6 +59,7 @@ interface UserProp {
 
 export function AppShell({ children, user }: { children: ReactNode; user: UserProp | null }) {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -93,33 +96,68 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
         <Link
           key={item.href}
           href={item.href}
+          title={isCollapsed ? item.label : undefined}
           className={clsx(
-            "relative flex h-10 items-center gap-3 rounded-md px-4 text-[13px] font-medium transition-colors",
+            "relative flex h-10 items-center rounded-md text-[13px] font-medium transition-colors",
+            isCollapsed ? "justify-center px-0" : "gap-3 px-4",
             active
-              ? "bg-deepMid pl-[13px] text-white before:absolute before:left-0 before:top-2 before:h-6 before:w-[3px] before:rounded-r before:bg-signal"
+              ? clsx(
+                  "bg-deepMid text-white before:absolute before:left-0 before:top-2 before:h-6 before:w-[3px] before:rounded-r before:bg-signal",
+                  !isCollapsed && "pl-[13px]",
+                )
               : "text-white/55 hover:bg-deepMid hover:text-white/80",
           )}
         >
           <Icon size={16} strokeWidth={1.5} className="shrink-0" />
-          {item.label}
+          {!isCollapsed && item.label}
         </Link>
       );
     });
 
   return (
     <div className="flex min-h-[100dvh]">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-[220px] flex-col bg-depth">
-        <div className="flex h-14 items-center gap-2 border-b border-white/15 px-4">
+      <aside
+        className={clsx(
+          "fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border bg-depth transition-[width]",
+          isCollapsed ? "w-[72px]" : "w-[220px]",
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((value) => !value)}
+          className="absolute -right-4 top-16 z-40 flex h-9 w-9 items-center justify-center rounded-md border border-signal bg-surface text-signal shadow-[0_4px_16px_rgba(30,42,58,0.16)] transition hover:bg-violet_bg hover:text-signal2"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? <ChevronRight size={19} strokeWidth={2} /> : <ChevronLeft size={19} strokeWidth={2} />}
+        </button>
+
+        <div className={clsx("flex h-14 items-center border-b border-white/15 px-4", isCollapsed ? "justify-center" : "gap-2")}>
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-signal">
             <Zap size={14} strokeWidth={1.5} className="text-white" />
           </div>
-          <span className="font-display text-[17px] font-semibold tracking-tight text-white">AssetFlow</span>
+          {!isCollapsed && (
+            <>
+              <span className="min-w-0 flex-1 font-display text-[17px] font-semibold tracking-tight text-white">AssetFlow</span>
+              <Link
+                href="/notifications"
+                className="relative flex h-8 w-8 items-center justify-center rounded-md border border-white/15 text-white/70 transition hover:bg-deepMid hover:text-white"
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <Bell size={16} strokeWidth={1.5} />
+                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-signal" />
+              </Link>
+            </>
+          )}
         </div>
 
         <nav className="flex-1 space-y-px overflow-y-auto px-2 py-4">
-          <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
-            Navigation
-          </p>
+          {!isCollapsed && (
+            <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
+              Navigation
+            </p>
+          )}
 
           {renderNav(
             navItems.filter((item) => {
@@ -136,30 +174,34 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
           {activeRole === "ADMIN" && (
             <>
               <div className="my-3 border-t border-white/15" />
-              <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
-                Admin
-              </p>
+              {!isCollapsed && (
+                <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
+                  Admin
+                </p>
+              )}
               {renderNav(adminNavItems)}
             </>
           )}
         </nav>
 
         <div className="border-t border-white/15 p-3">
-          <div className="flex items-center gap-2.5">
+          <div className={clsx("flex items-center", isCollapsed ? "flex-col gap-2" : "gap-2.5")}>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-[11px] font-semibold text-white">
               {userInitials}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-white">{userName}</p>
-              <span
-                className={clsx(
-                  "mt-1 inline-flex items-center rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.04em]",
-                  meta.chipClass,
-                )}
-              >
-                {meta.label}
-              </span>
-            </div>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white">{userName}</p>
+                <span
+                  className={clsx(
+                    "mt-1 inline-flex items-center rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.04em]",
+                    meta.chipClass,
+                  )}
+                >
+                  {meta.label}
+                </span>
+              </div>
+            )}
             <button
               onClick={handleLogout}
               className="rounded p-1 text-white/40 transition hover:bg-deepMid hover:text-white"
@@ -171,36 +213,9 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
         </div>
       </aside>
 
-      <div className="ml-[220px] flex min-h-[100dvh] flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-surface px-6">
-          <span className="font-display text-[22px] font-semibold tracking-[-0.3px] text-ink">
-            {getPageTitle(pathname)}
-          </span>
-
-          <Link
-            href="/notifications"
-            className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border text-ink2 transition hover:bg-canvas"
-          >
-            <Bell size={16} strokeWidth={1.5} />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-signal" />
-          </Link>
-        </header>
-
+      <div className={clsx("flex min-h-[100dvh] flex-1 flex-col transition-[margin-left]", isCollapsed ? "ml-[72px]" : "ml-[220px]")}>
         <main className="flex-1 bg-canvas px-6 py-6">{children}</main>
       </div>
     </div>
   );
-}
-
-function getPageTitle(pathname: string): string {
-  if (pathname === "/" || pathname === "/dashboard") return "Dashboard";
-  if (pathname.startsWith("/assets")) return "Asset Registry";
-  if (pathname.startsWith("/allocations")) return "Allocation & Transfer";
-  if (pathname.startsWith("/bookings") || pathname.startsWith("/resource-booking")) return "Resource Booking";
-  if (pathname.startsWith("/maintenance")) return "Maintenance";
-  if (pathname.startsWith("/audits")) return "Audits";
-  if (pathname.startsWith("/reports")) return "Reports & Analytics";
-  if (pathname.startsWith("/activity") || pathname.startsWith("/notifications")) return "Notifications";
-  if (pathname.startsWith("/org")) return "Organization Setup";
-  return "AssetFlow";
 }

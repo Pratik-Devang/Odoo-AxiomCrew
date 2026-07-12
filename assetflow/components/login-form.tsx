@@ -66,7 +66,78 @@ const demoCredentials = [
     email: "isabella.davis@assetflow.local",
     password: "Password123!",
   },
-];
+  {
+    role: "Department Head",
+    name: "Nora Evans",
+    email: "nora.evans@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Owen Brooks",
+    email: "owen.brooks@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Department Head",
+    name: "Grace Kim",
+    email: "grace.kim@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Asset Manager",
+    name: "Victor Stone",
+    email: "victor.stone@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Hannah Lee",
+    email: "hannah.lee@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Arjun Mehta",
+    email: "arjun.mehta@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Chloe Park",
+    email: "chloe.park@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Diego Ramirez",
+    email: "diego.ramirez@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Farah Khan",
+    email: "farah.khan@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ben Carter",
+    email: "ben.carter@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Leah Thompson",
+    email: "leah.thompson@assetflow.local",
+    password: "Password123!",
+  },
+  {
+    role: "Employee",
+    name: "Ravi Nair",
+    email: "ravi.nair@assetflow.local",
+    password: "Password123!",
+  },];
 
 export function LoginForm({ redirectTo = "/dashboard", accountCreated = false }) {
   const router = useRouter();
@@ -135,7 +206,7 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
         </button>
 
         {credentialsOpen && (
-          <div className="absolute left-0 right-0 z-20 mt-1 border-2 border-ink bg-surface shadow-md">
+          <div className="absolute left-0 right-0 z-20 mt-1 max-h-80 overflow-y-auto border-2 border-ink bg-surface shadow-md">
             {demoCredentials.map((account) => (
               <button
                 key={account.email}

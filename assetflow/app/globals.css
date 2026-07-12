@@ -171,3 +171,106 @@
     animation: af-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }
+
+/* Blueprint Calm compatibility for older flat-page utility markup. */
+.border-ink,
+.border-ink\/5,
+.border-ink\/10,
+.border-ink\/15,
+.border-ink\/20,
+.border-ink\/30,
+.border-ink\/40,
+.border-ink\/50 {
+  border-color: var(--color-border) !important;
+}
+
+.divide-ink > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border) !important;
+}
+
+.border-2 {
+  border-width: 1px !important;
+}
+
+.border-b-2 {
+  border-bottom-width: 1px !important;
+}
+
+.border-l-2 {
+  border-left-width: 1px !important;
+}
+
+.border-r-2 {
+  border-right-width: 1px !important;
+}
+
+.border-t-2 {
+  border-top-width: 1px !important;
+}
+
+.border-x-2 {
+  border-left-width: 1px !important;
+  border-right-width: 1px !important;
+}
+
+.rounded-xl {
+  border-radius: var(--radius-md, 8px) !important;
+}
+
+.bg-sunken {
+  background-color: var(--color-surface) !important;
+}
+
+.bg-ink:not(.text-white):not([class*="hover\:bg-ink"]) {
+  background-color: var(--color-depth) !important;
+}
+
+h1.text-lg.font-bold.uppercase.tracking-widest.text-ink,
+h1.text-xl.font-bold.uppercase.tracking-widest.text-ink,
+h1.text-lg.font-bold.uppercase.tracking-wider.text-ink,
+h2.text-lg.font-bold.uppercase.tracking-wider.text-ink {
+  font-family: var(--font-outfit), var(--font-inter), system-ui, sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.3px !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+.border-b-2.border-ink.pb-4,
+.border-b-2.border-ink {
+  border-color: var(--color-border) !important;
+}
+
+.border-2.border-ink.bg-surface,
+.border-2.border-ink.bg-canvas,
+.border-2.border-ink.bg-surface.overflow-hidden,
+.border-2.border-ink.bg-surface.rounded-lg,
+.border-2.border-ink.bg-surface.rounded-xl {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  background-color: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+thead.bg-ink,
+tr.bg-ink {
+  background-color: var(--color-surface) !important;
+  color: var(--color-ink) !important;
+}
+
+thead.bg-ink th,
+tr.bg-ink th {
+  color: var(--color-muted) !important;
+}
+
+.shadow-sm,
+.shadow-md,
+.shadow-lg,
+.shadow-xl {
+  box-shadow: none !important;
+}
+
+.shadow-2xl {
+  box-shadow: 0 4px 24px rgba(30, 42, 58, 0.10) !important;
+}
