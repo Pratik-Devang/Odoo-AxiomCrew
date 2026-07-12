@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-<<<<<<< HEAD
+import type { UserRole } from "@prisma/client";
 import {
   LayoutDashboard,
   Package,
@@ -17,7 +17,6 @@ import {
   Building2,
   Activity,
   LogOut,
-  ChevronRight,
 } from "lucide-react";
 
 const navItems = [
@@ -33,25 +32,10 @@ const navItems = [
 
 const adminNavItems = [
   { label: "Org Setup", href: "/org", icon: Building2 },
-=======
-import type { UserRole } from "@prisma/client";
-
-const navItems: Array<{ label: string; href: string; roles?: UserRole[] }> = [
-  { label: "Dashboard", href: "/" },
-  { label: "Organization Setup", href: "/organization-setup", roles: ["ADMIN"] },
-  { label: "Assets", href: "/assets" },
-  { label: "Allocation & Transfer", href: "/allocation-transfer" },
-  { label: "Resource Booking", href: "/resource-booking" },
-  { label: "Maintenance", href: "/maintenance" },
-  { label: "Audit", href: "/audit" },
-  { label: "Reports", href: "/reports" },
-  { label: "Notifications", href: "/notifications" },
->>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
 ] as const;
 
 const shelllessRoutes = ["/login", "/signup", "/forgot-password"];
 
-<<<<<<< HEAD
 const roleMeta: Record<string, { label: string; className: string }> = {
   ADMIN: { label: "Admin", className: "bg-violet text-white" },
   ASSET_MANAGER: { label: "Asset Manager", className: "bg-signal text-white" },
@@ -59,21 +43,21 @@ const roleMeta: Record<string, { label: string; className: string }> = {
   EMPLOYEE: { label: "Employee", className: "bg-ink3 text-white" },
 };
 
-export function AppShell({ children }: { children: ReactNode }) {
-=======
 export function AppShell({ children, role }: { children: ReactNode; role: UserRole | null }) {
->>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
   const pathname = usePathname();
 
   if (shelllessRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
     return <>{children}</>;
   }
 
-  // Normalise root path
   const isActive = (href: string) =>
     href === "/dashboard"
       ? pathname === "/dashboard" || pathname === "/"
       : pathname === href || pathname.startsWith(`${href}/`);
+
+  const activeRole = role ?? "EMPLOYEE";
+  const userInitials = activeRole === "ADMIN" ? "AA" : "U";
+  const userName = activeRole === "ADMIN" ? "Avery Admin" : "User";
 
   return (
     <div className="flex min-h-screen">
@@ -87,7 +71,6 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
           <span className="text-sm font-semibold tracking-tight text-white">AssetFlow</span>
         </div>
 
-<<<<<<< HEAD
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
@@ -112,51 +95,47 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
               </Link>
             );
           })}
-=======
-          <nav aria-label="Primary navigation" className="space-y-1">
-            {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
->>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
 
-          {/* Admin section */}
-          <hr className="my-3 border-white/10" />
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
-            Admin
-          </p>
-          {adminNavItems.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "border-l-2 border-signal bg-white/15 pl-[10px] text-white"
-                    : "text-white/60 hover:bg-white/10 hover:text-white"
-                )}
-              >
-                <Icon size={16} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {/* Admin section - only visible to ADMIN and ASSET_MANAGER roles */}
+          {(activeRole === "ADMIN" || activeRole === "ASSET_MANAGER") && (
+            <>
+              <hr className="my-3 border-white/10" />
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                Admin
+              </p>
+              {adminNavItems.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={clsx(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      active
+                        ? "border-l-2 border-signal bg-white/15 pl-[10px] text-white"
+                        : "text-white/60 hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         {/* User footer */}
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal text-xs font-semibold text-white">
-              AA
+              {userInitials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">Avery Admin</p>
-              <span className={clsx("mt-0.5 inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", roleMeta["ADMIN"].className)}>
-                {roleMeta["ADMIN"].label}
+              <p className="truncate text-sm font-medium text-white">{userName}</p>
+              <span className={clsx("mt-0.5 inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", roleMeta[activeRole].className)}>
+                {roleMeta[activeRole].label}
               </span>
             </div>
             <button className="text-white/40 transition hover:text-white" title="Sign out">

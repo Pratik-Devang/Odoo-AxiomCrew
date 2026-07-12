@@ -19,15 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const session = getSession();
 
   return (
-<<<<<<< HEAD
     <html lang="en" className={`h-full ${inter.variable}`}>
       <body className="min-h-full font-sans bg-canvas text-ink antialiased">
-        <AppShell>{children}</AppShell>
-=======
-    <html lang="en" className="h-full">
-      <body className="min-h-full font-sans">
         <AppShell role={session?.role ?? null}>{children}</AppShell>
->>>>>>> 79ff05dcf327b3c43cd4f1151af24d95bb3d8b7e
       </body>
     </html>
   );
