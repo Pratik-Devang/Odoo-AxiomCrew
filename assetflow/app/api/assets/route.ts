@@ -33,6 +33,21 @@ const assetSelect = {
   category: { select: { id: true, name: true } },
   currentHolder: { select: { id: true, name: true, department: { select: { id: true, name: true } } } },
   currentHolderDepartment: { select: { id: true, name: true } },
+  allocations: {
+    orderBy: {
+      allocatedAt: "desc",
+    },
+    select: {
+      id: true,
+      allocatedAt: true,
+      expectedReturnDate: true,
+      returnedAt: true,
+      returnConditionNotes: true,
+      status: true,
+      employee: { select: { id: true, name: true, department: { select: { name: true } } } },
+      department: { select: { id: true, name: true } },
+    },
+  },
 } satisfies Prisma.AssetSelect;
 
 export const dynamic = "force-dynamic";

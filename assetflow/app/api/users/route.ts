@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/require-role";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireRole([UserRole.ADMIN, UserRole.ASSET_MANAGER]);
+  const auth = await requireRole(Object.values(UserRole));
   if (auth.response) return auth.response;
 
   const users = await prisma.user.findMany({
