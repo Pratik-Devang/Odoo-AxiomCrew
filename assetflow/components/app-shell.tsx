@@ -4,10 +4,11 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { UserRole } from "@prisma/client";
 
-const navItems = [
+const navItems: Array<{ label: string; href: string; roles?: UserRole[] }> = [
   { label: "Dashboard", href: "/" },
-  { label: "Organization Setup", href: "/organization-setup" },
+  { label: "Organization Setup", href: "/organization-setup", roles: ["ADMIN"] },
   { label: "Assets", href: "/assets" },
   { label: "Allocation & Transfer", href: "/allocation-transfer" },
   { label: "Resource Booking", href: "/resource-booking" },
@@ -19,7 +20,7 @@ const navItems = [
 
 const shelllessRoutes = ["/login", "/signup", "/forgot-password"];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, role }: { children: ReactNode; role: UserRole | null }) {
   const pathname = usePathname();
 
   if (shelllessRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
@@ -35,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <nav aria-label="Primary navigation" className="space-y-1">
-            {navItems.map((item) => {
+            {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"

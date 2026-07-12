@@ -53,14 +53,18 @@ export const sessionCookieOptions = {
   maxAge: AUTH_COOKIE_MAX_AGE,
 };
 
-export async function getCurrentUser() {
+export function getSession() {
   const token = cookies().get(AUTH_COOKIE_NAME)?.value;
 
   if (!token) {
     return null;
   }
 
-  const session = verifySessionToken(token);
+  return verifySessionToken(token);
+}
+
+export async function getCurrentUser() {
+  const session = getSession();
 
   if (!session) {
     return null;
