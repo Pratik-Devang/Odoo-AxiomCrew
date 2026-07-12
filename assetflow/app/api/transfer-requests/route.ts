@@ -11,16 +11,36 @@ export async function GET() {
   if (auth.response) return auth.response;
 
   try {
+    const where: any = {
+      status: "REQUESTED",
+    };
+
+    if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+      if (auth.user.departmentId === null) {
+        return NextResponse.json({ transferRequests: [] }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+      }
+      where.OR = [
+        { asset: { currentHolderDepartmentId: auth.user.departmentId } },
+        { asset: { currentHolder: { departmentId: auth.user.departmentId } } },
+        { fromEmployee: { departmentId: auth.user.departmentId } },
+        { toEmployee: { departmentId: auth.user.departmentId } },
+      ];
+    } else if (auth.user.role === UserRole.EMPLOYEE) {
+      where.OR = [
+        { fromEmployeeId: auth.user.id },
+        { toEmployeeId: auth.user.id },
+      ];
+    }
+
     const transferRequests = await prisma.transferRequest.findMany({
-      where: {
-        status: "REQUESTED",
-      },
+      where,
       include: {
         asset: {
           select: {
             id: true,
             tag: true,
             name: true,
+            currentHolderDepartmentId: true,
           },
         },
         fromEmployee: {

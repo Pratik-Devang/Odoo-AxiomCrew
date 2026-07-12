@@ -7,6 +7,229 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                          Int                  @id @default(autoincrement())
+  name                        String
+  email                       String               @unique
+  passwordHash                String
+  role                        UserRole             @default(EMPLOYEE)
+  departmentId                Int?
+  status                      RecordStatus         @default(ACTIVE)
+  createdAt                   DateTime             @default(now())
+  allocations                 Allocation[]         @relation("AllocationEmployee")
+  heldAssets                  Asset[]              @relation("AssetCurrentHolder")
+  auditAssignments            AuditAuditor[]
+  auditItemsVerified          AuditItem[]          @relation("AuditItemVerifiedBy")
+  bookings                    Booking[]            @relation("BookingUser")
+  headedDepartments           Department[]         @relation("DepartmentHead")
+  maintenanceRequestsApproved MaintenanceRequest[] @relation("MaintenanceApprovedBy")
+  maintenanceRequestsRaised   MaintenanceRequest[] @relation("MaintenanceRaisedBy")
+  notifications               Notification[]
+  transferRequestsDecided     TransferRequest[]    @relation("TransferDecidedBy")
+  transferRequestsSent        TransferRequest[]    @relation("TransferFromEmployee")
+  transferRequestsReceived    TransferRequest[]    @relation("TransferToEmployee")
+  department                  Department?          @relation("DepartmentMembers", fields: [departmentId], references: [id])
+
+  @@index([departmentId])
+}
+
+model Department {
+  id                 Int          @id @default(autoincrement())
+  name               String       @unique
+  headId             Int?
+  parentDepartmentId Int?
+  status             RecordStatus @default(ACTIVE)
+  createdAt          DateTime     @default(now())
+  allocations        Allocation[] @relation("AllocationDepartment")
+  heldAssets         Asset[]      @relation("AssetCurrentHolderDepartment")
+  scopedAuditCycles  AuditCycle[] @relation("AuditScopeDepartment")
+  head               User?        @relation("DepartmentHead", fields: [headId], references: [id])
+  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments   Department[] @relation("DepartmentHierarchy")
+  members            User[]       @relation("DepartmentMembers")
+
+  @@index([headId])
+  @@index([parentDepartmentId])
+}
+
+model AssetCategory {
+  id     Int          @id @default(autoincrement())
+  name   String       @unique
+  status RecordStatus @default(ACTIVE)
+  assets Asset[]
+}
+
+model Asset {
+  id                        Int                  @id @default(autoincrement())
+  /// Assigned by the application in the AF-0001 format.
+  tag                       String               @unique
+  name                      String
+  categoryId                Int
+  serialNumber              String
+  acquisitionDate           DateTime             @db.Date
+  acquisitionCost           Decimal              @db.Decimal(12, 2)
+  condition                 String
+  location                  String
+  isBookable                Boolean              @default(false)
+  status                    AssetStatus          @default(AVAILABLE)
+  currentHolderId           Int?
+  currentHolderDepartmentId Int?
+  createdAt                 DateTime             @default(now())
+  allocations               Allocation[]
+  category                  AssetCategory        @relation(fields: [categoryId], references: [id])
+  currentHolderDepartment   Department?          @relation("AssetCurrentHolderDepartment", fields: [currentHolderDepartmentId], references: [id])
+  currentHolder             User?                @relation("AssetCurrentHolder", fields: [currentHolderId], references: [id])
+  auditItems                AuditItem[]
+  bookings                  Booking[]
+  maintenanceRequests       MaintenanceRequest[]
+  transferRequests          TransferRequest[]
+
+  @@index([categoryId])
+  @@index([currentHolderId])
+  @@index([currentHolderDepartmentId])
+  @@index([status])
+}
+
+model Allocation {
+  id                   Int              @id @default(autoincrement())
+  assetId              Int
+  employeeId           Int?
+  departmentId         Int?
+  allocatedAt          DateTime         @default(now())
+  expectedReturnDate   DateTime?
+  returnedAt           DateTime?
+  returnConditionNotes String?
+  status               AllocationStatus @default(ACTIVE)
+  asset                Asset            @relation(fields: [assetId], references: [id])
+  department           Department?      @relation("AllocationDepartment", fields: [departmentId], references: [id])
+  employee             User?            @relation("AllocationEmployee", fields: [employeeId], references: [id])
+
+  @@index([assetId])
+  @@index([employeeId])
+  @@index([departmentId])
+  @@index([status])
+}
+
+model TransferRequest {
+  id             Int                   @id @default(autoincrement())
+  assetId        Int
+  fromEmployeeId Int
+  toEmployeeId   Int
+  reason         String
+  status         TransferRequestStatus @default(REQUESTED)
+  requestedAt    DateTime              @default(now())
+  decidedAt      DateTime?
+  decidedById    Int?
+  asset          Asset                 @relation(fields: [assetId], references: [id])
+  decidedBy      User?                 @relation("TransferDecidedBy", fields: [decidedById], references: [id])
+  fromEmployee   User                  @relation("TransferFromEmployee", fields: [fromEmployeeId], references: [id])
+  toEmployee     User                  @relation("TransferToEmployee", fields: [toEmployeeId], references: [id])
+
+  @@index([assetId])
+  @@index([fromEmployeeId])
+  @@index([toEmployeeId])
+  @@index([decidedById])
+  @@index([status])
+}
+
+model Booking {
+  id         Int           @id @default(autoincrement())
+  assetId    Int
+  bookedById Int
+  startTime  DateTime
+  endTime    DateTime
+  status     BookingStatus @default(UPCOMING)
+  createdAt  DateTime      @default(now())
+  asset      Asset         @relation(fields: [assetId], references: [id])
+  bookedBy   User          @relation("BookingUser", fields: [bookedById], references: [id])
+
+  @@index([assetId, startTime, endTime])
+  @@index([bookedById])
+  @@index([status])
+}
+
+model MaintenanceRequest {
+  id               Int                 @id @default(autoincrement())
+  assetId          Int
+  raisedById       Int
+  issueDescription String
+  priority         MaintenancePriority
+  status           MaintenanceStatus   @default(PENDING)
+  technicianName   String?
+  approvedById     Int?
+  raisedAt         DateTime            @default(now())
+  resolvedAt       DateTime?
+  photoUrl         String?
+  approvedBy       User?               @relation("MaintenanceApprovedBy", fields: [approvedById], references: [id])
+  asset            Asset               @relation(fields: [assetId], references: [id])
+  raisedBy         User                @relation("MaintenanceRaisedBy", fields: [raisedById], references: [id])
+
+  @@index([assetId])
+  @@index([raisedById])
+  @@index([approvedById])
+  @@index([status])
+}
+
+model AuditCycle {
+  id                Int              @id @default(autoincrement())
+  title             String
+  scopeDepartmentId Int?
+  scopeLocation     String?
+  startDate         DateTime         @db.Date
+  endDate           DateTime         @db.Date
+  status            AuditCycleStatus @default(OPEN)
+  createdAt         DateTime         @default(now())
+  auditors          AuditAuditor[]
+  scopeDepartment   Department?      @relation("AuditScopeDepartment", fields: [scopeDepartmentId], references: [id])
+  items             AuditItem[]
+
+  @@index([scopeDepartmentId])
+  @@index([status])
+}
+
+model AuditAuditor {
+  id           Int        @id @default(autoincrement())
+  auditCycleId Int
+  userId       Int
+  auditCycle   AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([auditCycleId, userId])
+  @@index([userId])
+}
+
+model AuditItem {
+  id               Int               @id @default(autoincrement())
+  auditCycleId     Int
+  assetId          Int
+  expectedLocation String
+  verification     AuditVerification @default(PENDING)
+  verifiedById     Int?
+  verifiedAt       DateTime?
+  notes            String?
+  asset            Asset             @relation(fields: [assetId], references: [id])
+  auditCycle       AuditCycle        @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
+  verifiedBy       User?             @relation("AuditItemVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@unique([auditCycleId, assetId])
+  @@index([assetId])
+  @@index([verifiedById])
+  @@index([verification])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int?
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
 enum UserRole {
   EMPLOYEE
   DEPARTMENT_HEAD
@@ -86,240 +309,4 @@ enum NotificationType {
   TRANSFER_APPROVED
   OVERDUE_RETURN
   AUDIT_DISCREPANCY
-}
-
-model User {
-  id           Int          @id @default(autoincrement())
-  name         String
-  email        String       @unique
-  passwordHash String
-  role         UserRole     @default(EMPLOYEE)
-  departmentId Int?
-  status       RecordStatus @default(ACTIVE)
-  createdAt    DateTime     @default(now())
-
-  department                  Department?          @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
-  headedDepartments           Department[]         @relation("DepartmentHead")
-  heldAssets                  Asset[]              @relation("AssetCurrentHolder")
-  allocations                 Allocation[]         @relation("AllocationEmployee")
-  transferRequestsSent        TransferRequest[]    @relation("TransferFromEmployee")
-  transferRequestsReceived    TransferRequest[]    @relation("TransferToEmployee")
-  transferRequestsDecided     TransferRequest[]    @relation("TransferDecidedBy")
-  bookings                    Booking[]            @relation("BookingUser")
-  maintenanceRequestsRaised   MaintenanceRequest[] @relation("MaintenanceRaisedBy")
-  maintenanceRequestsApproved MaintenanceRequest[] @relation("MaintenanceApprovedBy")
-  auditAssignments            AuditAuditor[]
-  auditItemsVerified          AuditItem[]          @relation("AuditItemVerifiedBy")
-  notifications               Notification[]
-
-  @@index([departmentId])
-}
-
-model Department {
-  id                 Int          @id @default(autoincrement())
-  name               String       @unique
-  headId             Int?
-  parentDepartmentId Int?
-  status             RecordStatus @default(ACTIVE)
-  createdAt          DateTime     @default(now())
-
-  head              User?        @relation("DepartmentHead", fields: [headId], references: [id], onDelete: SetNull)
-  parentDepartment  Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
-  childDepartments  Department[] @relation("DepartmentHierarchy")
-  members           User[]       @relation("DepartmentMembers")
-  heldAssets        Asset[]      @relation("AssetCurrentHolderDepartment")
-  allocations       Allocation[] @relation("AllocationDepartment")
-  scopedAuditCycles AuditCycle[] @relation("AuditScopeDepartment")
-
-  @@index([headId])
-  @@index([parentDepartmentId])
-}
-
-model AssetCategory {
-  id     Int          @id @default(autoincrement())
-  name   String       @unique
-  status RecordStatus @default(ACTIVE)
-
-  assets Asset[]
-}
-
-model Asset {
-  id                        Int         @id @default(autoincrement())
-  /// Assigned by the application in the AF-0001 format.
-  tag                       String      @unique
-  name                      String
-  categoryId                Int
-  serialNumber              String
-  acquisitionDate           DateTime    @db.Date
-  acquisitionCost           Decimal     @db.Decimal(12, 2)
-  condition                 String
-  location                  String
-  isBookable                Boolean     @default(false)
-  status                    AssetStatus @default(AVAILABLE)
-  currentHolderId           Int?
-  currentHolderDepartmentId Int?
-  createdAt                 DateTime    @default(now())
-
-  category                AssetCategory        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  currentHolder           User?                @relation("AssetCurrentHolder", fields: [currentHolderId], references: [id], onDelete: SetNull)
-  currentHolderDepartment Department?          @relation("AssetCurrentHolderDepartment", fields: [currentHolderDepartmentId], references: [id], onDelete: SetNull)
-  allocations             Allocation[]
-  transferRequests        TransferRequest[]
-  bookings                Booking[]
-  maintenanceRequests     MaintenanceRequest[]
-  auditItems              AuditItem[]
-
-  @@index([categoryId])
-  @@index([currentHolderId])
-  @@index([currentHolderDepartmentId])
-  @@index([status])
-}
-
-model Allocation {
-  id                   Int              @id @default(autoincrement())
-  assetId              Int
-  employeeId           Int?
-  departmentId         Int?
-  allocatedAt          DateTime         @default(now())
-  expectedReturnDate   DateTime?
-  returnedAt           DateTime?
-  returnConditionNotes String?
-  status               AllocationStatus @default(ACTIVE)
-
-  asset      Asset       @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  employee   User?       @relation("AllocationEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
-  department Department? @relation("AllocationDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
-
-  @@index([assetId])
-  @@index([employeeId])
-  @@index([departmentId])
-  @@index([status])
-}
-
-model TransferRequest {
-  id             Int                   @id @default(autoincrement())
-  assetId        Int
-  fromEmployeeId Int
-  toEmployeeId   Int
-  reason         String                @db.Text
-  status         TransferRequestStatus @default(REQUESTED)
-  requestedAt    DateTime              @default(now())
-  decidedAt      DateTime?
-  decidedById    Int?
-
-  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  fromEmployee User  @relation("TransferFromEmployee", fields: [fromEmployeeId], references: [id], onDelete: Restrict)
-  toEmployee   User  @relation("TransferToEmployee", fields: [toEmployeeId], references: [id], onDelete: Restrict)
-  decidedBy    User? @relation("TransferDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
-
-  @@index([assetId])
-  @@index([fromEmployeeId])
-  @@index([toEmployeeId])
-  @@index([decidedById])
-  @@index([status])
-}
-
-model Booking {
-  id         Int           @id @default(autoincrement())
-  assetId    Int
-  bookedById Int
-  startTime  DateTime
-  endTime    DateTime
-  status     BookingStatus @default(UPCOMING)
-  createdAt  DateTime      @default(now())
-
-  /// The application must ensure that the related asset has isBookable = true.
-  asset    Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  bookedBy User  @relation("BookingUser", fields: [bookedById], references: [id], onDelete: Restrict)
-
-  @@index([assetId, startTime, endTime])
-  @@index([bookedById])
-  @@index([status])
-}
-
-model MaintenanceRequest {
-  id               Int                 @id @default(autoincrement())
-  assetId          Int
-  raisedById       Int
-  issueDescription String              @db.Text
-  priority         MaintenancePriority
-  status           MaintenanceStatus   @default(PENDING)
-  technicianName   String?
-  approvedById     Int?
-  raisedAt         DateTime            @default(now())
-  resolvedAt       DateTime?
-  photoUrl         String?
-
-  asset      Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  raisedBy   User  @relation("MaintenanceRaisedBy", fields: [raisedById], references: [id], onDelete: Restrict)
-  approvedBy User? @relation("MaintenanceApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
-
-  @@index([assetId])
-  @@index([raisedById])
-  @@index([approvedById])
-  @@index([status])
-}
-
-model AuditCycle {
-  id                Int              @id @default(autoincrement())
-  title             String
-  scopeDepartmentId Int?
-  scopeLocation     String?
-  startDate         DateTime         @db.Date
-  endDate           DateTime         @db.Date
-  status            AuditCycleStatus @default(OPEN)
-  createdAt         DateTime         @default(now())
-
-  scopeDepartment Department?    @relation("AuditScopeDepartment", fields: [scopeDepartmentId], references: [id], onDelete: SetNull)
-  auditors        AuditAuditor[]
-  items           AuditItem[]
-
-  @@index([scopeDepartmentId])
-  @@index([status])
-}
-
-model AuditAuditor {
-  id           Int @id @default(autoincrement())
-  auditCycleId Int
-  userId       Int
-
-  auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([auditCycleId, userId])
-  @@index([userId])
-}
-
-model AuditItem {
-  id               Int               @id @default(autoincrement())
-  auditCycleId     Int
-  assetId          Int
-  expectedLocation String
-  verification     AuditVerification @default(PENDING)
-  verifiedById     Int?
-  verifiedAt       DateTime?
-  notes            String?
-
-  auditCycle AuditCycle @relation(fields: [auditCycleId], references: [id], onDelete: Cascade)
-  asset      Asset      @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  verifiedBy User?      @relation("AuditItemVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
-
-  @@unique([auditCycleId, assetId])
-  @@index([assetId])
-  @@index([verifiedById])
-  @@index([verification])
-}
-
-model Notification {
-  id        Int              @id @default(autoincrement())
-  userId    Int?
-  type      NotificationType
-  message   String
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead])
-  @@index([createdAt])
 }

@@ -63,6 +63,20 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 
+  // Scoping checks
+  if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+    const isDeptAsset =
+      asset.currentHolderDepartment?.id === auth.user.departmentId ||
+      (asset.currentHolder?.department && asset.currentHolder.department.id === auth.user.departmentId);
+    if (!isDeptAsset) {
+      return NextResponse.json({ error: "Access Denied: You do not have access to assets outside your department.", code: "FORBIDDEN" }, { status: 403 });
+    }
+  } else if (auth.user.role === UserRole.EMPLOYEE) {
+    if (asset.currentHolder?.id !== auth.user.id) {
+      return NextResponse.json({ error: "Access Denied: You can only view assets allocated to you.", code: "FORBIDDEN" }, { status: 403 });
+    }
+  }
+
   return NextResponse.json({ asset }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 

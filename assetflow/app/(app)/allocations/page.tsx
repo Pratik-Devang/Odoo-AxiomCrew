@@ -25,10 +25,9 @@ interface Asset {
 
 interface TransferRequest {
   id: number;
-  status: string;
   reason: string;
   requestedAt: string;
-  asset: { id: number; tag: string; name: string };
+  asset: { id: number; tag: string; name: string; currentHolderDepartmentId: number | null };
   fromEmployee: { id: number; name: string };
   toEmployee: { id: number; name: string };
 }
@@ -36,6 +35,7 @@ interface TransferRequest {
 interface User {
   id: number;
   role: string;
+  departmentId: number | null;
 }
 
 type TabType = "active" | "overdue" | "transfers";
@@ -102,6 +102,7 @@ export default function AllocationsPage() {
             ? format(new Date(active.expectedReturnDate), "MMM dd, yyyy")
             : null,
           overdue: !!isOverdue,
+          employeeId: active.employee?.id || null,
         });
       }
     });
@@ -119,10 +120,25 @@ export default function AllocationsPage() {
     return activeAllocations.filter((a) => a.overdue).length;
   }, [activeAllocations]);
 
+  const isManager = useMemo(() => {
+    if (!currentUser) return false;
+    return ["ADMIN", "ASSET_MANAGER"].includes(currentUser.role);
+  }, [currentUser]);
+
   const isManagerOrHead = useMemo(() => {
     if (!currentUser) return false;
     return ["ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD"].includes(currentUser.role);
   }, [currentUser]);
+
+  const canApprove = (req: TransferRequest) => {
+    if (!currentUser) return false;
+    if (currentUser.role === "ADMIN" || currentUser.role === "ASSET_MANAGER") return true;
+    if (currentUser.role === "DEPARTMENT_HEAD") {
+      const assetDeptId = req.asset.currentHolderDepartmentId;
+      return assetDeptId !== null && currentUser.departmentId === assetDeptId;
+    }
+    return false;
+  };
 
   // Handle return action
   const handleReturn = async (allocationId: number, assetTag: string) => {
@@ -204,10 +220,12 @@ export default function AllocationsPage() {
           <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Allocation & Transfer</h1>
           <p className="text-xs text-ink3 mt-0.5">{activeAllocations.length} active allocations</p>
         </div>
-        <button onClick={() => router.push("/allocation")} className="af-btn-primary gap-1.5 text-xs">
-          <Plus size={13} />
-          New Allocation
-        </button>
+        {isManager && (
+          <button onClick={() => router.push("/allocation")} className="af-btn-primary gap-1.5 text-xs">
+            <Plus size={13} />
+            New Allocation
+          </button>
+        )}
       </div>
 
       {/* Message banners */}
@@ -315,7 +333,7 @@ export default function AllocationsPage() {
                             <ArrowLeftRight size={11} />
                             Transfer
                           </button>
-                          {isManagerOrHead && (
+                          {(isManager || row.employeeId === currentUser?.id) && (
                             <button
                               onClick={() => handleReturn(row.id, row.tag)}
                               disabled={actionLoading}
@@ -371,7 +389,7 @@ export default function AllocationsPage() {
                         {format(new Date(req.requestedAt), "MMM dd, yyyy")}
                       </td>
                       <td className="af-td text-right">
-                        {isManagerOrHead ? (
+                        {canApprove(req) ? (
                           <div className="inline-flex gap-2">
                             <button
                               onClick={() => handleTransferDecision(req.id, "APPROVE")}

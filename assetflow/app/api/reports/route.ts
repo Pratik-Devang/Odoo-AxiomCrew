@@ -12,6 +12,23 @@ export async function GET() {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
+  if (user.role === "EMPLOYEE") {
+    return NextResponse.json({ error: "Access Denied: Employees cannot view analytics reports.", code: "FORBIDDEN" }, { status: 403 });
+  }
+
+  const isManager = user.role === "ADMIN" || user.role === "ASSET_MANAGER";
+  const deptId = user.departmentId;
+
+  if (user.role === "DEPARTMENT_HEAD" && deptId === null) {
+    return NextResponse.json({
+      departmentUsage: [],
+      maintenanceFrequency: [],
+      mostUsedAssets: [],
+      idleAssets: [],
+      maintenanceDue: [],
+    });
+  }
+
   const now = new Date();
   const retirementCutoff = subMonths(now, 48);
   const maintenanceCutoff = subMonths(now, 6);
@@ -25,8 +42,13 @@ export async function GET() {
     assets,
     maintenanceResolved,
   ] = await Promise.all([
-    prisma.department.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.department.findMany({
+      where: isManager ? {} : { id: deptId! },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    }),
     prisma.allocation.findMany({
+      where: isManager ? {} : { OR: [{ departmentId: deptId! }, { employee: { departmentId: deptId! } }] },
       include: {
         asset: { select: { id: true, tag: true, name: true } },
         employee: { select: { departmentId: true, department: { select: { name: true } } } },
@@ -34,17 +56,20 @@ export async function GET() {
       },
     }),
     prisma.booking.findMany({
+      where: isManager ? {} : { bookedBy: { departmentId: deptId! } },
       include: {
         asset: { select: { id: true, tag: true, name: true } },
         bookedBy: { select: { departmentId: true, department: { select: { name: true } } } },
       },
     }),
     prisma.maintenanceRequest.findMany({
+      where: isManager ? {} : { asset: { OR: [{ currentHolderDepartmentId: deptId! }, { currentHolder: { departmentId: deptId! } }] } },
       include: {
         asset: { select: { id: true, tag: true, name: true } },
       },
     }),
     prisma.asset.findMany({
+      where: isManager ? {} : { OR: [{ currentHolderDepartmentId: deptId! }, { currentHolder: { departmentId: deptId! } }] },
       include: {
         allocations: { orderBy: { allocatedAt: "desc" }, take: 1 },
         bookings: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -53,7 +78,11 @@ export async function GET() {
       orderBy: { tag: "asc" },
     }),
     prisma.maintenanceRequest.findMany({
-      where: { status: "RESOLVED", resolvedAt: { not: null } },
+      where: {
+        status: "RESOLVED",
+        resolvedAt: { not: null },
+        ...(isManager ? {} : { asset: { OR: [{ currentHolderDepartmentId: deptId! }, { currentHolder: { departmentId: deptId! } }] } }),
+      },
       select: { assetId: true, resolvedAt: true },
       orderBy: { resolvedAt: "desc" },
     }),

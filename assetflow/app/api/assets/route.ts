@@ -100,6 +100,23 @@ export async function GET(request: Request) {
     });
   }
 
+  // Scoping rules
+  if (auth.user.role === UserRole.DEPARTMENT_HEAD) {
+    if (auth.user.departmentId === null) {
+      return NextResponse.json({ assets: [] }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+    }
+    andFilters.push({
+      OR: [
+        { currentHolderDepartmentId: auth.user.departmentId },
+        { currentHolder: { departmentId: auth.user.departmentId } },
+      ],
+    });
+  } else if (auth.user.role === UserRole.EMPLOYEE) {
+    andFilters.push({
+      currentHolderId: auth.user.id,
+    });
+  }
+
   if (andFilters.length > 0) {
     where.AND = andFilters;
   }
@@ -114,7 +131,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireRole([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD]);
+  const auth = await requireRole([UserRole.ADMIN, UserRole.ASSET_MANAGER]);
   if (auth.response) return auth.response;
 
   try {

@@ -17,7 +17,14 @@ import {
   Building2,
   Zap,
   LogOut,
+  type LucideIcon,
 } from "lucide-react";
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -35,10 +42,10 @@ const adminNavItems = [
 ] as const;
 
 const roleMeta: Record<string, { label: string; chipClass: string }> = {
-  ADMIN:           { label: "Admin",         chipClass: "border-signal bg-signal text-white" },
-  ASSET_MANAGER:   { label: "Asset Manager", chipClass: "border-go    bg-go    text-white" },
-  DEPARTMENT_HEAD: { label: "Dept Head",     chipClass: "border-warn   bg-warn   text-white" },
-  EMPLOYEE:        { label: "Employee",      chipClass: "border-ink3   bg-ink2   text-white" },
+  ADMIN: { label: "Admin", chipClass: "bg-violet_bg text-signal" },
+  ASSET_MANAGER: { label: "Asset Manager", chipClass: "bg-go_bg text-go" },
+  DEPARTMENT_HEAD: { label: "Dept Head", chipClass: "bg-warn_bg text-warn" },
+  EMPLOYEE: { label: "Employee", chipClass: "bg-gray_bg text-ink2" },
 };
 
 interface UserProp {
@@ -77,126 +84,109 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
         .slice(0, 2)
     : "GU";
 
+  const renderNav = (items: readonly NavItem[]) =>
+    items.map((item) => {
+      const active = isActive(item.href);
+      const Icon = item.icon;
+
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={clsx(
+            "relative flex h-10 items-center gap-3 rounded-md px-4 text-[13px] font-medium transition-colors",
+            active
+              ? "bg-deepMid pl-[13px] text-white before:absolute before:left-0 before:top-2 before:h-6 before:w-[3px] before:rounded-r before:bg-signal"
+              : "text-white/55 hover:bg-deepMid hover:text-white/80",
+          )}
+        >
+          <Icon size={16} strokeWidth={1.5} className="shrink-0" />
+          {item.label}
+        </Link>
+      );
+    });
+
   return (
     <div className="flex min-h-[100dvh]">
-      {/* ── Flat Sidebar ── */}
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-[220px] flex-col bg-ink border-r-2 border-ink">
-        {/* Logo block */}
-        <div className="flex h-14 items-center gap-2 border-b-2 border-white/10 px-4">
-          <div className="flex h-7 w-7 items-center justify-center border-2 border-signal bg-signal">
-            <Zap size={13} className="text-white fill-white" />
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-[220px] flex-col bg-depth">
+        <div className="flex h-14 items-center gap-2 border-b border-white/15 px-4">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-signal">
+            <Zap size={14} strokeWidth={1.5} className="text-white" />
           </div>
-          <span className="text-sm font-bold tracking-tight text-white uppercase">AssetFlow</span>
+          <span className="font-display text-[17px] font-semibold tracking-tight text-white">AssetFlow</span>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-px">
-          <p className="mb-2 px-2 text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">
+        <nav className="flex-1 space-y-px overflow-y-auto px-2 py-4">
+          <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
             Navigation
           </p>
 
-          {navItems
-            .filter((item) => {
-              if (item.href === "/audits" || item.href === "/reports") {
+          {renderNav(
+            navItems.filter((item) => {
+              if (item.href === "/audits") {
                 return activeRole === "ADMIN" || activeRole === "ASSET_MANAGER";
               }
+              if (item.href === "/reports") {
+                return activeRole === "ADMIN" || activeRole === "ASSET_MANAGER" || activeRole === "DEPARTMENT_HEAD";
+              }
               return true;
-            })
-            .map((item) => {
-              const active = isActive(item.href);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={clsx(
-                    "flex items-center gap-2.5 px-2 py-2 text-xs font-medium transition-colors border-l-2",
-                    active
-                      ? "border-signal bg-white/10 text-white"
-                      : "border-transparent text-white/50 hover:bg-white/8 hover:text-white hover:border-white/20"
-                  )}
-                >
-                  <Icon size={14} />
-                  {item.label}
-                </Link>
-              );
-            })}
+            }),
+          )}
 
-          {/* Admin-only section */}
           {activeRole === "ADMIN" && (
             <>
-              <div className="my-3 border-t border-white/10" />
-              <p className="mb-2 px-2 text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">
+              <div className="my-3 border-t border-white/15" />
+              <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
                 Admin
               </p>
-              {adminNavItems.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={clsx(
-                      "flex items-center gap-2.5 px-2 py-2 text-xs font-medium transition-colors border-l-2",
-                      active
-                        ? "border-signal bg-white/10 text-white"
-                        : "border-transparent text-white/50 hover:bg-white/8 hover:text-white hover:border-white/20"
-                    )}
-                  >
-                    <Icon size={14} />
-                    {item.label}
-                  </Link>
-                );
-              })}
+              {renderNav(adminNavItems)}
             </>
           )}
         </nav>
 
-        {/* User footer */}
-        <div className="border-t-2 border-white/10 p-3">
+        <div className="border-t border-white/15 p-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-white/30 bg-white/10 text-[10px] font-bold text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-[11px] font-semibold text-white">
               {userInitials}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-white">{userName}</p>
-              <span className={clsx("mt-0.5 inline-flex items-center border px-1.5 py-px text-[9px] font-bold uppercase tracking-wide", meta.chipClass)}>
+              <span
+                className={clsx(
+                  "mt-1 inline-flex items-center rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.04em]",
+                  meta.chipClass,
+                )}
+              >
                 {meta.label}
               </span>
             </div>
             <button
               onClick={handleLogout}
-              className="text-white/30 transition hover:text-white"
+              className="rounded p-1 text-white/40 transition hover:bg-deepMid hover:text-white"
               title="Sign out"
             >
-              <LogOut size={13} />
+              <LogOut size={16} strokeWidth={1.5} />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* ── Main content area ── */}
       <div className="ml-[220px] flex min-h-[100dvh] flex-1 flex-col">
-        {/* Top header bar */}
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b-2 border-ink bg-surface px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-ink">
-              {getPageTitle(pathname)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/notifications"
-              className="relative flex h-7 w-7 items-center justify-center border border-ink text-ink2 transition hover:bg-sunken"
-            >
-              <Bell size={13} />
-              <span className="absolute right-1 top-1 h-1.5 w-1.5 bg-signal" />
-            </Link>
-          </div>
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-surface px-6">
+          <span className="font-display text-[22px] font-semibold tracking-[-0.3px] text-ink">
+            {getPageTitle(pathname)}
+          </span>
+
+          <Link
+            href="/notifications"
+            className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border text-ink2 transition hover:bg-canvas"
+          >
+            <Bell size={16} strokeWidth={1.5} />
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-signal" />
+          </Link>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 bg-canvas px-6 py-5">{children}</main>
+        <main className="flex-1 bg-canvas px-6 py-6">{children}</main>
       </div>
     </div>
   );
@@ -204,7 +194,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: UserPr
 
 function getPageTitle(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") return "Dashboard";
-  if (pathname.startsWith("/assets"))      return "Asset Registry";
+  if (pathname.startsWith("/assets")) return "Asset Registry";
   if (pathname.startsWith("/allocations")) return "Allocation & Transfer";
   if (pathname.startsWith("/bookings") || pathname.startsWith("/resource-booking")) return "Resource Booking";
   if (pathname.startsWith("/maintenance")) return "Maintenance";

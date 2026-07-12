@@ -210,7 +210,7 @@ export default function AssetsPage() {
           <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Asset Registry</h1>
           <p className="mt-0.5 text-xs text-ink3">{assets.length} visible assets</p>
         </div>
-        {(currentUser?.role === "ADMIN" || currentUser?.role === "DEPARTMENT_HEAD") && (
+        {(currentUser?.role === "ADMIN" || currentUser?.role === "ASSET_MANAGER") && (
           <button onClick={() => setRegisterOpen(true)} className="af-btn-primary">
             <Plus size={13} />
             Register Asset
