@@ -47,4 +47,72 @@ export class NotificationService {
       console.error("Failed to create transfer notifications:", err);
     }
   }
+
+  static async notifyBookingConfirmed(
+    userId: number,
+    assetTag: string,
+    assetName: string,
+    startTime: Date,
+    endTime: Date
+  ) {
+    try {
+      const startStr = startTime.toLocaleString();
+      const endStr = endTime.toLocaleString();
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: NotificationType.BOOKING_CONFIRMED,
+          message: `Booking confirmed for ${assetTag} (${assetName}) from ${startStr} to ${endStr}.`,
+          isRead: false,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to create booking confirmation notification:", err);
+    }
+  }
+
+  static async notifyBookingCancelled(
+    userId: number,
+    assetTag: string,
+    assetName: string,
+    startTime: Date,
+    endTime: Date
+  ) {
+    try {
+      const startStr = startTime.toLocaleString();
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: NotificationType.BOOKING_CANCELLED,
+          message: `Booking for ${assetTag} (${assetName}) scheduled on ${startStr} has been cancelled.`,
+          isRead: false,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to create booking cancellation notification:", err);
+    }
+  }
+
+  static async notifyBookingRescheduled(
+    userId: number,
+    assetTag: string,
+    assetName: string,
+    startTime: Date,
+    endTime: Date
+  ) {
+    try {
+      const startStr = startTime.toLocaleString();
+      const endStr = endTime.toLocaleString();
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: NotificationType.BOOKING_CONFIRMED, // Reuse confirmed type
+          message: `Your booking for ${assetTag} (${assetName}) has been rescheduled to: ${startStr} to ${endStr}.`,
+          isRead: false,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to create booking reschedule notification:", err);
+    }
+  }
 }
