@@ -312,7 +312,7 @@ export default function AssetsPage() {
           categories={activeCategories}
           onClose={() => setRegisterOpen(false)}
           onCreated={(asset) => {
-            setAssets((current) => [asset, ...current].sort((a, b) => a.tag.localeCompare(b.tag)));
+            setAssets((current) => [asset, ...current].sort((a, b) => a.category.name.localeCompare(b.category.name) || a.tag.localeCompare(b.tag)));
             setRegisterOpen(false);
           }}
         />

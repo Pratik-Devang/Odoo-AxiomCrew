@@ -107,7 +107,7 @@ export async function GET(request: Request) {
   const assets = await prisma.asset.findMany({
     where,
     select: assetSelect,
-    orderBy: { tag: "asc" },
+    orderBy: [{ category: { name: "asc" } }, { tag: "asc" }],
   });
 
   return NextResponse.json({ assets }, { headers: { "Cache-Control": "no-store, max-age=0" } });
