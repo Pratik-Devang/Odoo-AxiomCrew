@@ -1,192 +1,264 @@
 "use client";
 
-import { useState } from "react";
-import { StatusChip } from "@/components/status-chip";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { format } from "date-fns";
+import { ChevronDown, Loader2, Package, Plus, Search, X } from "lucide-react";
 import { AssetTag } from "@/components/asset-tag";
-import { Search, Plus, X, Package, Filter, ChevronRight } from "lucide-react";
+import { Badge, type BadgeStatus } from "@/components/badge";
+import { SectionHeader } from "@/components/section-header";
 
-const STATUSES = ["All", "AVAILABLE", "ALLOCATED", "UNDER_MAINTENANCE", "RESERVED", "RETIRED"];
-const CATEGORIES = ["All", "Electronics", "Furniture", "AV Equipment", "Office Equipment", "Vehicles"];
+type AssetStatus =
+  | "AVAILABLE"
+  | "ALLOCATED"
+  | "RESERVED"
+  | "UNDER_MAINTENANCE"
+  | "LOST"
+  | "RETIRED"
+  | "DISPOSED";
 
-const assets = [
-  { tag: "AF-0001", name: "Dell XPS 15 Laptop",             category: "Electronics",     status: "ALLOCATED",          holder: "Priya Shah",        location: "Floor 2, Desk 14",    condition: "Good" },
-  { tag: "AF-0002", name: "Herman Miller Aeron Chair",       category: "Furniture",       status: "AVAILABLE",          holder: "—",                 location: "Store Room A",         condition: "Excellent" },
-  { tag: "AF-0003", name: "Canon EOS R6 Camera",            category: "Electronics",     status: "UNDER_MAINTENANCE",  holder: "—",                 location: "Service Center",       condition: "Fair" },
-  { tag: "AF-0004", name: "Standing Desk 180cm",            category: "Furniture",       status: "AVAILABLE",          holder: "—",                 location: "Floor 3, Bay 5",       condition: "Good" },
-  { tag: "AF-0005", name: "Projector Epson EB-L510U",       category: "AV Equipment",    status: "RESERVED",           holder: "Meeting Room B",    location: "Floor 1",             condition: "Good" },
-  { tag: "AF-0006", name: 'MacBook Pro 14"',                category: "Electronics",     status: "ALLOCATED",          holder: "Liam Patel",        location: "Floor 2, Desk 22",    condition: "Excellent" },
-  { tag: "AF-0007", name: "Whiteboard 240x120",             category: "Office Equipment",status: "AVAILABLE",          holder: "—",                 location: "Floor 3, Room 12",    condition: "Good" },
-  { tag: "AF-0008", name: "Toyota HiAce Van",               category: "Vehicles",        status: "ALLOCATED",          holder: "Ethan Brown",       location: "Parking Lot B",       condition: "Good" },
-  { tag: "AF-0009", name: "Cisco IP Phone 8800",            category: "Electronics",     status: "AVAILABLE",          holder: "—",                 location: "Store Room B",         condition: "Excellent" },
-  { tag: "AF-0010", name: 'Sony Bravia 65" TV',             category: "AV Equipment",    status: "ALLOCATED",          holder: "Conference Room A", location: "Floor 1",             condition: "Good" },
-  { tag: "AF-0011", name: "HP LaserJet Pro",                category: "Office Equipment",status: "UNDER_MAINTENANCE",  holder: "—",                 location: "Service Center",       condition: "Fair" },
-  { tag: "AF-0012", name: "Ergonomic Keyboard + Mouse Set", category: "Electronics",     status: "AVAILABLE",          holder: "—",                 location: "Store Room A",         condition: "Good" },
+type AssetRow = {
+  id: number;
+  tag: string;
+  name: string;
+  categoryId: number;
+  serialNumber: string;
+  acquisitionDate: string;
+  acquisitionCost: string;
+  condition: string;
+  location: string;
+  isBookable: boolean;
+  status: AssetStatus;
+  currentHolderDepartmentId: number | null;
+  category: { id: number; name: string };
+  currentHolder: { id: number; name: string; department: { id: number; name: string } | null } | null;
+  currentHolderDepartment: { id: number; name: string } | null;
+};
+
+type AssetDetail = AssetRow & {
+  createdAt: string;
+  allocations: Array<{
+    id: number;
+    allocatedAt: string;
+    expectedReturnDate: string | null;
+    returnedAt: string | null;
+    status: string;
+    employee: { name: string; email: string; department: { name: string } | null } | null;
+    department: { name: string } | null;
+  }>;
+  maintenanceRequests: Array<{
+    id: number;
+    raisedAt: string;
+    resolvedAt: string | null;
+    issueDescription: string;
+    priority: string;
+    status: string;
+    technicianName: string | null;
+    raisedBy: { name: string };
+  }>;
+};
+
+type Category = { id: number; name: string; status: string };
+type Department = { id: number; name: string; status: string };
+
+const statusOptions: Array<{ value: AssetStatus; label: string }> = [
+  { value: "AVAILABLE", label: "Available" },
+  { value: "ALLOCATED", label: "Allocated" },
+  { value: "RESERVED", label: "Reserved" },
+  { value: "UNDER_MAINTENANCE", label: "Under Maintenance" },
+  { value: "LOST", label: "Lost" },
+  { value: "RETIRED", label: "Retired" },
+  { value: "DISPOSED", label: "Disposed" },
 ];
 
-type Asset = (typeof assets)[0];
+const statusToBadge: Record<AssetStatus, BadgeStatus> = {
+  AVAILABLE: "available",
+  ALLOCATED: "allocated",
+  RESERVED: "reserved",
+  UNDER_MAINTENANCE: "maintenance",
+  LOST: "lost",
+  RETIRED: "retired",
+  DISPOSED: "disposed",
+};
 
-function AssetDetailDrawer({ asset, onClose }: { asset: Asset | null; onClose: () => void }) {
-  const [tab, setTab] = useState<"details" | "history">("details");
-  if (!asset) return null;
-
-  const details = [
-    { label: "Asset Tag",       value: <AssetTag tag={asset.tag} /> },
-    { label: "Category",        value: asset.category },
-    { label: "Status",          value: <StatusChip status={asset.status} /> },
-    { label: "Current Holder",  value: asset.holder || "Unassigned" },
-    { label: "Location",        value: asset.location },
-    { label: "Condition",       value: asset.condition },
-  ];
-
-  const history = [
-    { event: "Allocated",   detail: "Assigned to Priya Shah",     date: "Dec 10, 2025" },
-    { event: "Returned",    detail: "Returned to store",           date: "Nov 28, 2025" },
-    { event: "Maintenance", detail: "Screen replaced",             date: "Nov 15, 2025" },
-    { event: "Registered",  detail: "Asset added to registry",     date: "Jan 5, 2025" },
-  ];
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/30" onClick={onClose}>
-      <div
-        className="w-[460px] h-full bg-surface border-l-2 border-ink flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drawer header */}
-        <div className="flex items-start justify-between border-b-2 border-ink p-5">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ink3 mb-1">Asset Detail</p>
-            <h2 className="text-base font-bold text-ink">{asset.name}</h2>
-            <AssetTag tag={asset.tag} />
-          </div>
-          <button onClick={onClose} className="border border-ink p-1 text-ink2 hover:bg-danger hover:border-danger hover:text-white transition-colors">
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b-2 border-ink">
-          {(["details", "history"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest border-b-2 -mb-[2px] transition-colors ${
-                tab === t ? "border-signal text-signal bg-canvas" : "border-transparent text-ink3 hover:text-ink"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {tab === "details" ? (
-            <dl className="divide-y divide-ink/10">
-              {details.map((d) => (
-                <div key={d.label} className="flex items-center justify-between px-5 py-3.5">
-                  <dt className="text-[10px] font-bold uppercase tracking-widest text-ink3 w-32 shrink-0">{d.label}</dt>
-                  <dd className="text-sm text-ink text-right">{d.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <div className="divide-y divide-ink/10">
-              {history.map((h, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="h-2 w-2 shrink-0 bg-signal" />
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-ink">{h.event}</p>
-                    <p className="text-[11px] text-ink3">{h.detail}</p>
-                  </div>
-                  <span className="font-mono text-[10px] text-ink3">{h.date}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer actions */}
-        <div className="border-t-2 border-ink p-4 flex gap-2">
-          <button className="af-btn-primary flex-1 text-xs">Allocate</button>
-          <button className="af-btn-secondary flex-1 text-xs">Maintenance</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const emptyForm = {
+  name: "",
+  categoryId: "",
+  serialNumber: "",
+  acquisitionDate: new Date().toISOString().slice(0, 10),
+  acquisitionCost: "",
+  condition: "Good",
+  location: "",
+  isBookable: false,
+};
 
 export default function AssetsPage() {
+  const searchParams = useSearchParams();
+  const [assets, setAssets] = useState<AssetRow[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [query, setQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterCategory, setFilterCategory] = useState("All");
-  const [selected, setSelected] = useState<Asset | null>(null);
+  const [categoryId, setCategoryId] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [departmentId, setDepartmentId] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const filtered = assets.filter((a) => {
-    const matchQ = !query || a.name.toLowerCase().includes(query.toLowerCase()) || a.tag.toLowerCase().includes(query.toLowerCase());
-    const matchS = filterStatus === "All" || a.status === filterStatus;
-    const matchC = filterCategory === "All" || a.category === filterCategory;
-    return matchQ && matchS && matchC;
-  });
+  useEffect(() => {
+    if (searchParams.get("register") === "1") {
+      setRegisterOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLookups() {
+      const [categoriesResponse, departmentsResponse] = await Promise.all([
+        fetch("/api/categories", { cache: "no-store" }),
+        fetch("/api/departments", { cache: "no-store" }),
+      ]);
+
+      if (!categoriesResponse.ok || !departmentsResponse.ok) {
+        throw new Error("Unable to load filters");
+      }
+
+      const categoriesPayload = (await categoriesResponse.json()) as { categories: Category[] };
+      const departmentsPayload = (await departmentsResponse.json()) as { departments: Department[] };
+
+      if (!cancelled) {
+        setCategories(categoriesPayload.categories);
+        setDepartments(departmentsPayload.departments);
+      }
+    }
+
+    loadLookups().catch((err) => {
+      if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load filters");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams();
+      if (query.trim()) params.set("search", query.trim());
+      if (categoryId !== "all") params.set("categoryId", categoryId);
+      if (status !== "all") params.set("status", status);
+      if (departmentId !== "all") params.set("departmentId", departmentId);
+
+      try {
+        const response = await fetch(`/api/assets?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load assets");
+        }
+
+        const payload = (await response.json()) as { assets: AssetRow[] };
+        setAssets(payload.assets);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : "Unable to load assets");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [query, categoryId, status, departmentId]);
+
+  const activeCategories = useMemo(() => categories.filter((category) => category.status === "ACTIVE"), [categories]);
+
+  async function reloadAssets() {
+    const response = await fetch("/api/assets", { cache: "no-store" });
+    if (response.ok) {
+      const payload = (await response.json()) as { assets: AssetRow[] };
+      setAssets(payload.assets);
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <div>
           <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Asset Registry</h1>
-          <p className="text-xs text-ink3 mt-0.5">{assets.length} total assets</p>
+          <p className="mt-0.5 text-xs text-ink3">{assets.length} visible assets</p>
         </div>
-        <button className="af-btn-primary gap-1.5">
+        <button onClick={() => setRegisterOpen(true)} className="af-btn-primary">
           <Plus size={13} />
           Register Asset
         </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink3" />
+      <div className="space-y-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink3" />
           <input
-            type="search"
-            placeholder="Search by tag or name…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="af-input pl-8 text-xs"
+            onChange={(event) => setQuery(event.target.value)}
+            type="search"
+            placeholder="Search by tag, serial, or QR code..."
+            className="af-input pl-9"
           />
         </div>
 
-        <div className="flex items-center gap-1">
-          <Filter size={12} className="text-ink3" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border-2 border-ink bg-surface px-2 py-1.5 text-xs font-medium text-ink outline-none focus:border-signal"
-          >
-            {STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="border-2 border-ink bg-surface px-2 py-1.5 text-xs font-medium text-ink outline-none focus:border-signal"
-          >
-            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
+        <div className="flex flex-wrap gap-2">
+          <FilterSelect label="Category" value={categoryId} onChange={setCategoryId}>
+            <option value="all">All categories</option>
+            {activeCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect label="Status" value={status} onChange={setStatus}>
+            <option value="all">All statuses</option>
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect label="Department" value={departmentId} onChange={setDepartmentId}>
+            <option value="all">All departments</option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </FilterSelect>
         </div>
-
-        <span className="border border-ink/30 bg-canvas px-2 py-1 text-[10px] font-bold text-ink3">
-          {filtered.length} results
-        </span>
       </div>
 
-      {/* Table */}
-      <div className="border-2 border-ink bg-surface overflow-hidden">
-        {filtered.length === 0 ? (
+      {error && <div className="border border-danger bg-danger_bg px-4 py-3 text-sm text-danger">{error}</div>}
+
+      <div className="border-2 border-ink bg-surface">
+        {loading ? (
+          <div className="flex min-h-[18rem] items-center justify-center text-sm text-ink3">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading assets
+          </div>
+        ) : assets.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20">
             <Package size={32} className="text-ink3" />
             <p className="text-sm font-bold text-ink3">No assets match your filters</p>
-            <button onClick={() => { setQuery(""); setFilterStatus("All"); setFilterCategory("All"); }} className="af-btn-secondary">
-              Clear filters
-            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -197,37 +269,25 @@ export default function AssetsPage() {
                   <th className="af-th">Name</th>
                   <th className="af-th">Category</th>
                   <th className="af-th">Status</th>
-                  <th className="af-th">Holder</th>
                   <th className="af-th">Location</th>
-                  <th className="af-th">Condition</th>
-                  <th className="af-th w-8"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((asset) => (
+                {assets.map((asset) => (
                   <tr
-                    key={asset.tag}
-                    onClick={() => setSelected(asset)}
-                    className="cursor-pointer hover:bg-canvas transition-colors group"
+                    key={asset.id}
+                    onClick={() => setSelectedId(asset.id)}
+                    className="cursor-pointer transition-colors hover:bg-canvas"
                   >
-                    <td className="af-td"><AssetTag tag={asset.tag} /></td>
+                    <td className="af-td">
+                      <AssetTag tag={asset.tag} />
+                    </td>
                     <td className="af-td font-medium text-ink">{asset.name}</td>
-                    <td className="af-td text-ink3">{asset.category}</td>
-                    <td className="af-td"><StatusChip status={asset.status} size="sm" /></td>
-                    <td className="af-td text-ink2">{asset.holder}</td>
-                    <td className="af-td text-ink3">{asset.location}</td>
+                    <td className="af-td text-ink2">{asset.category.name}</td>
                     <td className="af-td">
-                      <span className={`border text-[9px] font-bold uppercase px-1.5 py-0.5 ${
-                        asset.condition === "Excellent" ? "border-go bg-go_bg text-go"
-                          : asset.condition === "Good" ? "border-ink2 bg-canvas text-ink2"
-                          : "border-warn bg-warn_bg text-warn"
-                      }`}>
-                        {asset.condition}
-                      </span>
+                      <Badge status={statusToBadge[asset.status]} />
                     </td>
-                    <td className="af-td">
-                      <ChevronRight size={13} className="text-ink3 group-hover:text-signal transition-colors" />
-                    </td>
+                    <td className="af-td text-ink2">{asset.location}</td>
                   </tr>
                 ))}
               </tbody>
@@ -236,7 +296,413 @@ export default function AssetsPage() {
         )}
       </div>
 
-      {selected && <AssetDetailDrawer asset={selected} onClose={() => setSelected(null)} />}
+      {registerOpen && (
+        <RegisterAssetModal
+          categories={activeCategories}
+          onClose={() => setRegisterOpen(false)}
+          onCreated={(asset) => {
+            setAssets((current) => [asset, ...current].sort((a, b) => a.tag.localeCompare(b.tag)));
+            setRegisterOpen(false);
+          }}
+        />
+      )}
+
+      {selectedId && (
+        <AssetDetailDrawer
+          assetId={selectedId}
+          onClose={() => setSelectedId(null)}
+          onUpdated={(asset) => {
+            setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
+            reloadAssets();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="relative inline-flex items-center gap-2 border-2 border-ink bg-surface px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-ink">
+      {label}
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="appearance-none bg-transparent pr-5 text-xs font-semibold normal-case tracking-normal text-ink2 outline-none"
+      >
+        {children}
+      </select>
+      <ChevronDown size={12} className="pointer-events-none absolute right-2 text-ink3" />
+    </label>
+  );
+}
+
+function RegisterAssetModal({
+  categories,
+  onClose,
+  onCreated,
+}: {
+  categories: Category[];
+  onClose: () => void;
+  onCreated: (asset: AssetRow) => void;
+}) {
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          categoryId: Number(form.categoryId),
+          acquisitionCost: Number(form.acquisitionCost),
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to register asset");
+      }
+
+      onCreated(payload.asset as AssetRow);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to register asset");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4" onClick={onClose}>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-2xl border-2 border-ink bg-surface"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b-2 border-ink px-5 py-4">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">Register Asset</h2>
+            <p className="mt-1 text-xs text-ink3">Tag is generated server-side.</p>
+          </div>
+          <button type="button" onClick={onClose} className="border border-ink p-1 text-ink2 hover:bg-sunken">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          {error && <div className="sm:col-span-2 border border-danger bg-danger_bg px-3 py-2 text-xs text-danger">{error}</div>}
+          <FormField label="Name">
+            <input
+              required
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <FormField label="Category">
+            <select
+              required
+              value={form.categoryId}
+              onChange={(event) => setForm({ ...form, categoryId: event.target.value })}
+              className="af-input"
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Serial Number">
+            <input
+              required
+              value={form.serialNumber}
+              onChange={(event) => setForm({ ...form, serialNumber: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <FormField label="Acquisition Date">
+            <input
+              required
+              type="date"
+              value={form.acquisitionDate}
+              onChange={(event) => setForm({ ...form, acquisitionDate: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <FormField label="Acquisition Cost">
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.acquisitionCost}
+              onChange={(event) => setForm({ ...form, acquisitionCost: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <FormField label="Condition">
+            <input
+              required
+              value={form.condition}
+              onChange={(event) => setForm({ ...form, condition: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <FormField label="Location">
+            <input
+              required
+              value={form.location}
+              onChange={(event) => setForm({ ...form, location: event.target.value })}
+              className="af-input"
+            />
+          </FormField>
+          <label className="flex items-center gap-2 pt-6 text-sm font-semibold text-ink">
+            <input
+              type="checkbox"
+              checked={form.isBookable}
+              onChange={(event) => setForm({ ...form, isBookable: event.target.checked })}
+              className="h-4 w-4 accent-signal"
+            />
+            Bookable resource
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t-2 border-ink px-5 py-4">
+          <button type="button" onClick={onClose} className="af-btn-secondary">
+            Cancel
+          </button>
+          <button type="submit" disabled={submitting} className="af-btn-primary">
+            {submitting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+            Register Asset
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AssetDetailDrawer({
+  assetId,
+  onClose,
+  onUpdated,
+}: {
+  assetId: number;
+  onClose: () => void;
+  onUpdated: (asset: AssetRow) => void;
+}) {
+  const [asset, setAsset] = useState<AssetDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [edit, setEdit] = useState({ name: "", location: "", condition: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAsset() {
+      setLoading(true);
+      const response = await fetch(`/api/assets/${assetId}`, { cache: "no-store" });
+
+      if (!response.ok) {
+        throw new Error("Unable to load asset detail");
+      }
+
+      const payload = (await response.json()) as { asset: AssetDetail };
+
+      if (!cancelled) {
+        setAsset(payload.asset);
+        setEdit({
+          name: payload.asset.name,
+          location: payload.asset.location,
+          condition: payload.asset.condition,
+        });
+      }
+    }
+
+    loadAsset()
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load asset detail");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId]);
+
+  async function saveEdits() {
+    setSaving(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/assets/${assetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(edit),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update asset");
+      }
+
+      setAsset(payload.asset as AssetDetail);
+      onUpdated(payload.asset as AssetRow);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update asset");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-ink/40" onClick={onClose}>
+      <div
+        className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-l-2 border-ink bg-surface"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between border-b-2 border-ink p-5">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink3">Asset Detail</p>
+            <div className="mt-2 flex items-center gap-3">
+              {asset && <AssetTag tag={asset.tag} />}
+              {asset && <Badge status={statusToBadge[asset.status]} />}
+            </div>
+          </div>
+          <button onClick={onClose} className="border border-ink p-1 text-ink2 hover:bg-sunken">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="flex min-h-[18rem] items-center justify-center text-sm text-ink3">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading asset
+            </div>
+          ) : asset ? (
+            <div className="space-y-6">
+              {error && <div className="border border-danger bg-danger_bg px-3 py-2 text-xs text-danger">{error}</div>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Name">
+                  <input value={edit.name} onChange={(event) => setEdit({ ...edit, name: event.target.value })} className="af-input" />
+                </FormField>
+                <ReadOnlyField label="Category" value={asset.category.name} />
+                <ReadOnlyField label="Serial Number" value={asset.serialNumber} />
+                <ReadOnlyField label="Acquisition Date" value={format(new Date(asset.acquisitionDate), "MMM d, yyyy")} />
+                <ReadOnlyField label="Acquisition Cost" value={String(asset.acquisitionCost)} />
+                <FormField label="Condition">
+                  <input
+                    value={edit.condition}
+                    onChange={(event) => setEdit({ ...edit, condition: event.target.value })}
+                    className="af-input"
+                  />
+                </FormField>
+                <FormField label="Location">
+                  <input
+                    value={edit.location}
+                    onChange={(event) => setEdit({ ...edit, location: event.target.value })}
+                    className="af-input"
+                  />
+                </FormField>
+                <ReadOnlyField label="Bookable" value={asset.isBookable ? "Yes" : "No"} />
+              </div>
+
+              <div className="flex justify-end">
+                <button onClick={saveEdits} disabled={saving} className="af-btn-primary">
+                  {saving && <Loader2 size={13} className="animate-spin" />}
+                  Save Basic Edits
+                </button>
+              </div>
+
+              <HistorySection title="Allocation History">
+                {asset.allocations.length > 0 ? (
+                  asset.allocations.map((allocation) => (
+                    <div key={allocation.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2">
+                      <p className="font-bold text-ink">
+                        {allocation.employee?.name ?? allocation.department?.name ?? "Unassigned"} · {allocation.status}
+                      </p>
+                      <p className="mt-1 text-ink3">
+                        {allocation.employee?.department?.name ?? allocation.department?.name ?? "No department"} ·{" "}
+                        {format(new Date(allocation.allocatedAt), "MMM d, yyyy")}
+                        {allocation.returnedAt ? ` to ${format(new Date(allocation.returnedAt), "MMM d, yyyy")}` : ""}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-ink3">No allocation history yet.</p>
+                )}
+              </HistorySection>
+
+              <HistorySection title="Maintenance History">
+                {asset.maintenanceRequests.length > 0 ? (
+                  asset.maintenanceRequests.map((request) => (
+                    <div key={request.id} className="border border-border bg-canvas px-4 py-3 text-xs text-ink2">
+                      <p className="font-bold text-ink">
+                        {format(new Date(request.raisedAt), "MMM d, yyyy")} · {request.status.replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1 text-ink3">{request.issueDescription}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-ink3">No maintenance history yet.</p>
+                )}
+              </HistorySection>
+            </div>
+          ) : (
+            <p className="text-sm text-danger">Asset not found.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ink3">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ink3">{label}</span>
+      <div className="border border-border bg-canvas px-3 py-2 text-sm text-ink">{value}</div>
+    </div>
+  );
+}
+
+function HistorySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <SectionHeader title={title} />
+      <div className="space-y-2">{children}</div>
+    </section>
   );
 }
