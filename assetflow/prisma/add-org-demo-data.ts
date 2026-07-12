@@ -1,15 +1,5 @@
 // @ts-nocheck
-const {
-  PrismaClient,
-  UserRole,
-  RecordStatus,
-  AssetStatus,
-  AllocationStatus,
-  BookingStatus,
-  MaintenancePriority,
-  MaintenanceStatus,
-  TransferRequestStatus,
-} = require("@prisma/client");
+const { PrismaClient, UserRole, RecordStatus } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
@@ -37,320 +27,165 @@ const userRows = [
   { name: "Ravi Nair", email: "ravi.nair@assetflow.local", role: UserRole.EMPLOYEE, department: "Legal & Compliance" },
 ];
 
-const categoryNames = ["Electronics", "Furniture", "Vehicles", "IT Equipment", "Facilities"];
-
-const assignedAssetRows = [
-  { tag: "AF-0101", name: "Finance MacBook Air", category: "IT Equipment", serialNumber: "FIN-MBA-0101", cost: "1350.00", condition: "Good", location: "Finance - Desk 01", email: "nora.evans@assetflow.local" },
-  { tag: "AF-0102", name: "HR Onboarding Laptop", category: "IT Equipment", serialNumber: "HR-LAP-0102", cost: "1280.00", condition: "Good", location: "HR - Desk 04", email: "owen.brooks@assetflow.local" },
-  { tag: "AF-0103", name: "Procurement Tablet", category: "Electronics", serialNumber: "PROC-TAB-0103", cost: "620.00", condition: "Good", location: "Procurement - Desk 02", email: "grace.kim@assetflow.local" },
-  { tag: "AF-0104", name: "Security Radio Kit", category: "Electronics", serialNumber: "SEC-RAD-0104", cost: "890.00", condition: "Fair", location: "Security Control Room", email: "victor.stone@assetflow.local" },
-  { tag: "AF-0105", name: "Finance Dell Latitude", category: "IT Equipment", serialNumber: "FIN-DL-0105", cost: "1420.00", condition: "Good", location: "Finance - Desk 08", email: "hannah.lee@assetflow.local" },
-  { tag: "AF-0106", name: "Budget Review Monitor", category: "IT Equipment", serialNumber: "FIN-MON-0106", cost: "310.00", condition: "Good", location: "Finance - Desk 09", email: "arjun.mehta@assetflow.local" },
-  { tag: "AF-0107", name: "HR Badge Scanner", category: "Electronics", serialNumber: "HR-SCAN-0107", cost: "450.00", condition: "Good", location: "HR Reception", email: "chloe.park@assetflow.local" },
-  { tag: "AF-0108", name: "Supplier Audit Laptop", category: "IT Equipment", serialNumber: "PROC-LAP-0108", cost: "1510.00", condition: "Good", location: "Procurement - Desk 07", email: "diego.ramirez@assetflow.local" },
-  { tag: "AF-0109", name: "Procurement Label Printer", category: "Electronics", serialNumber: "PROC-LBL-0109", cost: "520.00", condition: "Good", location: "Procurement Store", email: "farah.khan@assetflow.local" },
-  { tag: "AF-0110", name: "Security Patrol Tablet", category: "Electronics", serialNumber: "SEC-TAB-0110", cost: "760.00", condition: "Fair", location: "Gatehouse", email: "ben.carter@assetflow.local" },
-  { tag: "AF-0111", name: "Compliance Laptop", category: "IT Equipment", serialNumber: "LC-LAP-0111", cost: "1490.00", condition: "Good", location: "Legal - Desk 03", email: "leah.thompson@assetflow.local" },
-  { tag: "AF-0112", name: "Contract Review Monitor", category: "IT Equipment", serialNumber: "LC-MON-0112", cost: "330.00", condition: "Good", location: "Legal - Desk 05", email: "ravi.nair@assetflow.local" },
+const assignedAssets = [
+  ["nora.evans@assetflow.local", "AF-0101", "Finance MacBook Air", "IT Equipment", "FIN-MBA-0101", "Finance - Desk 01"],
+  ["owen.brooks@assetflow.local", "AF-0102", "HR Onboarding Laptop", "IT Equipment", "HR-LAP-0102", "HR - Desk 04"],
+  ["grace.kim@assetflow.local", "AF-0103", "Procurement Tablet", "Electronics", "PROC-TAB-0103", "Procurement - Desk 02"],
+  ["victor.stone@assetflow.local", "AF-0104", "Security Radio Kit", "Electronics", "SEC-RAD-0104", "Security Control Room"],
+  ["hannah.lee@assetflow.local", "AF-0105", "Finance Dell Latitude", "IT Equipment", "FIN-DL-0105", "Finance - Desk 08"],
+  ["arjun.mehta@assetflow.local", "AF-0106", "Budget Review Monitor", "IT Equipment", "FIN-MON-0106", "Finance - Desk 09"],
+  ["chloe.park@assetflow.local", "AF-0107", "HR Badge Scanner", "Electronics", "HR-SCAN-0107", "HR Reception"],
+  ["diego.ramirez@assetflow.local", "AF-0108", "Supplier Audit Laptop", "IT Equipment", "PROC-LAP-0108", "Procurement - Desk 07"],
+  ["farah.khan@assetflow.local", "AF-0109", "Procurement Label Printer", "Electronics", "PROC-LBL-0109", "Procurement Store"],
+  ["ben.carter@assetflow.local", "AF-0110", "Security Patrol Tablet", "Electronics", "SEC-TAB-0110", "Gatehouse"],
+  ["leah.thompson@assetflow.local", "AF-0111", "Compliance Laptop", "IT Equipment", "LC-LAP-0111", "Legal - Desk 03"],
+  ["ravi.nair@assetflow.local", "AF-0112", "Contract Review Monitor", "IT Equipment", "LC-MON-0112", "Legal - Desk 05"],
 ];
 
-const bookableAssetRows = [
-  { tag: "AF-0121", name: "Finance War Room", category: "Facilities", serialNumber: "ROOM-FIN-0121", cost: "9800.00", condition: "Good", location: "Building A - Floor 4" },
-  { tag: "AF-0122", name: "HR Interview Room", category: "Facilities", serialNumber: "ROOM-HR-0122", cost: "8400.00", condition: "Good", location: "Building A - Floor 2" },
-  { tag: "AF-0123", name: "Procurement Pool Vehicle", category: "Vehicles", serialNumber: "VEH-PROC-0123", cost: "24500.00", condition: "Good", location: "Parking Bay P3" },
-  { tag: "AF-0124", name: "Security Briefing Room", category: "Facilities", serialNumber: "ROOM-SEC-0124", cost: "7200.00", condition: "Good", location: "Security Wing" },
+const bookableAssets = [
+  ["AF-0121", "Finance War Room", "Facilities", "ROOM-FIN-0121", "Building A - Floor 4"],
+  ["AF-0122", "HR Interview Room", "Facilities", "ROOM-HR-0122", "Building A - Floor 2"],
+  ["AF-0123", "Procurement Pool Vehicle", "Vehicles", "VEH-PROC-0123", "Parking Bay P3"],
+  ["AF-0124", "Security Briefing Room", "Facilities", "ROOM-SEC-0124", "Security Wing"],
 ];
 
 const maintenanceRows = [
-  { email: "nora.evans@assetflow.local", assetTag: "AF-0101", issue: "Battery health dropped below expected threshold during travel.", priority: MaintenancePriority.MEDIUM, status: MaintenanceStatus.IN_PROGRESS },
-  { email: "owen.brooks@assetflow.local", assetTag: "AF-0102", issue: "Keyboard has intermittent key repeats during onboarding sessions.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.PENDING },
-  { email: "grace.kim@assetflow.local", assetTag: "AF-0103", issue: "Tablet screen protector cracked after supplier visit.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.APPROVED },
-  { email: "victor.stone@assetflow.local", assetTag: "AF-0104", issue: "Two radios need range testing before night patrol.", priority: MaintenancePriority.HIGH, status: MaintenanceStatus.TECHNICIAN_ASSIGNED },
-  { email: "hannah.lee@assetflow.local", assetTag: "AF-0105", issue: "Docking station disconnects external display randomly.", priority: MaintenancePriority.MEDIUM, status: MaintenanceStatus.PENDING },
-  { email: "arjun.mehta@assetflow.local", assetTag: "AF-0106", issue: "Monitor flickers when switching spreadsheet dashboards.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.RESOLVED },
-  { email: "chloe.park@assetflow.local", assetTag: "AF-0107", issue: "Badge scanner occasionally fails to read temporary visitor cards.", priority: MaintenancePriority.MEDIUM, status: MaintenanceStatus.IN_PROGRESS },
-  { email: "diego.ramirez@assetflow.local", assetTag: "AF-0108", issue: "VPN client fails on supplier audit network.", priority: MaintenancePriority.HIGH, status: MaintenanceStatus.APPROVED },
-  { email: "farah.khan@assetflow.local", assetTag: "AF-0109", issue: "Label printer alignment is drifting on asset labels.", priority: MaintenancePriority.MEDIUM, status: MaintenanceStatus.PENDING },
-  { email: "ben.carter@assetflow.local", assetTag: "AF-0110", issue: "Patrol tablet case latch is loose.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.RESOLVED },
-  { email: "leah.thompson@assetflow.local", assetTag: "AF-0111", issue: "Laptop fan noise increased after long review session.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.PENDING },
-  { email: "ravi.nair@assetflow.local", assetTag: "AF-0112", issue: "Monitor color calibration required for contract scans.", priority: MaintenancePriority.LOW, status: MaintenanceStatus.APPROVED },
+  ["nora.evans@assetflow.local", "AF-0101", "Battery health dropped below expected threshold during travel.", "MEDIUM", "IN_PROGRESS"],
+  ["owen.brooks@assetflow.local", "AF-0102", "Keyboard has intermittent key repeats during onboarding sessions.", "LOW", "PENDING"],
+  ["grace.kim@assetflow.local", "AF-0103", "Tablet screen protector cracked after supplier visit.", "LOW", "APPROVED"],
+  ["victor.stone@assetflow.local", "AF-0104", "Two radios need range testing before night patrol.", "HIGH", "TECHNICIAN_ASSIGNED"],
+  ["hannah.lee@assetflow.local", "AF-0105", "Docking station disconnects external display randomly.", "MEDIUM", "PENDING"],
+  ["arjun.mehta@assetflow.local", "AF-0106", "Monitor flickers when switching spreadsheet dashboards.", "LOW", "RESOLVED"],
+  ["chloe.park@assetflow.local", "AF-0107", "Badge scanner occasionally fails to read temporary visitor cards.", "MEDIUM", "IN_PROGRESS"],
+  ["diego.ramirez@assetflow.local", "AF-0108", "VPN client fails on supplier audit network.", "HIGH", "APPROVED"],
+  ["farah.khan@assetflow.local", "AF-0109", "Label printer alignment is drifting on asset labels.", "MEDIUM", "PENDING"],
+  ["ben.carter@assetflow.local", "AF-0110", "Patrol tablet case latch is loose.", "LOW", "RESOLVED"],
+  ["leah.thompson@assetflow.local", "AF-0111", "Laptop fan noise increased after long review session.", "LOW", "PENDING"],
+  ["ravi.nair@assetflow.local", "AF-0112", "Monitor color calibration required for contract scans.", "LOW", "APPROVED"],
 ];
 
 const bookingRows = [
-  { email: "nora.evans@assetflow.local", assetTag: "AF-0121", status: BookingStatus.UPCOMING, offsetHours: 24 },
-  { email: "owen.brooks@assetflow.local", assetTag: "AF-0122", status: BookingStatus.COMPLETED, offsetHours: -48 },
-  { email: "grace.kim@assetflow.local", assetTag: "AF-0123", status: BookingStatus.UPCOMING, offsetHours: 30 },
-  { email: "victor.stone@assetflow.local", assetTag: "AF-0124", status: BookingStatus.ONGOING, offsetHours: -1 },
-  { email: "hannah.lee@assetflow.local", assetTag: "AF-0121", status: BookingStatus.COMPLETED, offsetHours: -72 },
-  { email: "arjun.mehta@assetflow.local", assetTag: "AF-0121", status: BookingStatus.UPCOMING, offsetHours: 52 },
-  { email: "chloe.park@assetflow.local", assetTag: "AF-0122", status: BookingStatus.UPCOMING, offsetHours: 8 },
-  { email: "diego.ramirez@assetflow.local", assetTag: "AF-0123", status: BookingStatus.COMPLETED, offsetHours: -24 },
-  { email: "farah.khan@assetflow.local", assetTag: "AF-0123", status: BookingStatus.UPCOMING, offsetHours: 72 },
-  { email: "ben.carter@assetflow.local", assetTag: "AF-0124", status: BookingStatus.COMPLETED, offsetHours: -96 },
-  { email: "leah.thompson@assetflow.local", assetTag: "AF-0122", status: BookingStatus.UPCOMING, offsetHours: 12 },
-  { email: "ravi.nair@assetflow.local", assetTag: "AF-0121", status: BookingStatus.COMPLETED, offsetHours: -120 },
+  ["nora.evans@assetflow.local", "AF-0121", "UPCOMING", 24],
+  ["owen.brooks@assetflow.local", "AF-0122", "COMPLETED", -48],
+  ["grace.kim@assetflow.local", "AF-0123", "UPCOMING", 30],
+  ["victor.stone@assetflow.local", "AF-0124", "ONGOING", -1],
+  ["hannah.lee@assetflow.local", "AF-0121", "COMPLETED", -72],
+  ["arjun.mehta@assetflow.local", "AF-0121", "UPCOMING", 52],
+  ["chloe.park@assetflow.local", "AF-0122", "UPCOMING", 8],
+  ["diego.ramirez@assetflow.local", "AF-0123", "COMPLETED", -24],
+  ["farah.khan@assetflow.local", "AF-0123", "UPCOMING", 72],
+  ["ben.carter@assetflow.local", "AF-0124", "COMPLETED", -96],
+  ["leah.thompson@assetflow.local", "AF-0122", "UPCOMING", 12],
+  ["ravi.nair@assetflow.local", "AF-0121", "COMPLETED", -120],
 ];
 
 const transferRows = [
-  { from: "nora.evans@assetflow.local", to: "hannah.lee@assetflow.local", assetTag: "AF-0101", status: TransferRequestStatus.REQUESTED },
-  { from: "owen.brooks@assetflow.local", to: "chloe.park@assetflow.local", assetTag: "AF-0102", status: TransferRequestStatus.APPROVED },
-  { from: "grace.kim@assetflow.local", to: "diego.ramirez@assetflow.local", assetTag: "AF-0103", status: TransferRequestStatus.REQUESTED },
-  { from: "victor.stone@assetflow.local", to: "ben.carter@assetflow.local", assetTag: "AF-0104", status: TransferRequestStatus.REJECTED },
-  { from: "hannah.lee@assetflow.local", to: "arjun.mehta@assetflow.local", assetTag: "AF-0105", status: TransferRequestStatus.APPROVED },
-  { from: "diego.ramirez@assetflow.local", to: "farah.khan@assetflow.local", assetTag: "AF-0108", status: TransferRequestStatus.REQUESTED },
-  { from: "leah.thompson@assetflow.local", to: "ravi.nair@assetflow.local", assetTag: "AF-0111", status: TransferRequestStatus.APPROVED },
-  { from: "ravi.nair@assetflow.local", to: "leah.thompson@assetflow.local", assetTag: "AF-0112", status: TransferRequestStatus.REQUESTED },
+  ["nora.evans@assetflow.local", "hannah.lee@assetflow.local", "AF-0101", "REQUESTED"],
+  ["owen.brooks@assetflow.local", "chloe.park@assetflow.local", "AF-0102", "APPROVED"],
+  ["grace.kim@assetflow.local", "diego.ramirez@assetflow.local", "AF-0103", "REQUESTED"],
+  ["victor.stone@assetflow.local", "ben.carter@assetflow.local", "AF-0104", "REJECTED"],
+  ["hannah.lee@assetflow.local", "arjun.mehta@assetflow.local", "AF-0105", "APPROVED"],
+  ["diego.ramirez@assetflow.local", "farah.khan@assetflow.local", "AF-0108", "REQUESTED"],
+  ["leah.thompson@assetflow.local", "ravi.nair@assetflow.local", "AF-0111", "APPROVED"],
+  ["ravi.nair@assetflow.local", "leah.thompson@assetflow.local", "AF-0112", "REQUESTED"],
 ];
 
-async function upsertCategory(name) {
-  return prisma.assetCategory.upsert({
-    where: { name },
-    update: { status: RecordStatus.ACTIVE },
-    create: { name, status: RecordStatus.ACTIVE },
-  });
-}
-
-async function createIfMissing(model, where, data) {
-  const existing = await model.findFirst({ where });
-  if (existing) return existing;
-  return model.create({ data });
+async function firstOrCreate(model, where, data) {
+  const found = await model.findFirst({ where });
+  return found || model.create({ data });
 }
 
 async function main() {
   const passwordHash = await bcrypt.hash("Password123!", 12);
 
   for (const row of departmentRows) {
-    await prisma.department.upsert({
-      where: { name: row.name },
-      update: { status: RecordStatus.ACTIVE },
-      create: { name: row.name, status: RecordStatus.ACTIVE },
-    });
+    await prisma.department.upsert({ where: { name: row.name }, update: { status: RecordStatus.ACTIVE }, create: { name: row.name, status: RecordStatus.ACTIVE } });
   }
 
-  const departments = await prisma.department.findMany({
-    where: { name: { in: [...departmentRows.map((row) => row.name), "Operations", "Facilities"] } },
-    select: { id: true, name: true },
-  });
-  const departmentByName = Object.fromEntries(departments.map((department) => [department.name, department]));
+  const allDepartments = await prisma.department.findMany({ select: { id: true, name: true } });
+  const deptByName = Object.fromEntries(allDepartments.map((dept) => [dept.name, dept]));
 
   for (const row of departmentRows) {
-    const department = departmentByName[row.name];
-    const parent = row.parent ? departmentByName[row.parent] : null;
-    if (!department) continue;
-
-    await prisma.department.update({
-      where: { id: department.id },
-      data: { parentDepartmentId: parent?.id ?? null, status: RecordStatus.ACTIVE },
-    });
+    await prisma.department.update({ where: { name: row.name }, data: { parentDepartmentId: row.parent ? deptByName[row.parent]?.id ?? null : null } });
   }
 
-  const users = [];
   for (const row of userRows) {
-    const department = departmentByName[row.department];
-    if (!department) throw new Error(`Missing department: ${row.department}`);
-
-    const user = await prisma.user.upsert({
+    const department = deptByName[row.department];
+    await prisma.user.upsert({
       where: { email: row.email },
-      update: {
-        name: row.name,
-        role: row.role,
-        departmentId: department.id,
-        status: RecordStatus.ACTIVE,
-      },
-      create: {
-        name: row.name,
-        email: row.email,
-        passwordHash,
-        role: row.role,
-        departmentId: department.id,
-        status: RecordStatus.ACTIVE,
-      },
+      update: { name: row.name, role: row.role, departmentId: department.id, status: RecordStatus.ACTIVE },
+      create: { name: row.name, email: row.email, passwordHash, role: row.role, departmentId: department.id, status: RecordStatus.ACTIVE },
     });
-    users.push(user);
   }
 
+  const users = await prisma.user.findMany({ where: { email: { in: userRows.map((row) => row.email) } } });
   const userByEmail = Object.fromEntries(users.map((user) => [user.email, user]));
-  const headAssignments = [
-    { department: "Finance", email: "nora.evans@assetflow.local" },
-    { department: "Human Resources", email: "owen.brooks@assetflow.local" },
-    { department: "Procurement", email: "grace.kim@assetflow.local" },
-  ];
-
-  for (const assignment of headAssignments) {
-    const department = departmentByName[assignment.department];
-    const head = userByEmail[assignment.email];
-    if (!department || !head) continue;
-
-    await prisma.department.update({
-      where: { id: department.id },
-      data: { headId: head.id },
-    });
+  for (const [departmentName, email] of [["Finance", "nora.evans@assetflow.local"], ["Human Resources", "owen.brooks@assetflow.local"], ["Procurement", "grace.kim@assetflow.local"]]) {
+    await prisma.department.update({ where: { name: departmentName }, data: { headId: userByEmail[email].id } });
   }
 
-  const categories = await Promise.all(categoryNames.map(upsertCategory));
+  const categoryNames = ["IT Equipment", "Electronics", "Facilities", "Vehicles"];
+  const categories = await Promise.all(categoryNames.map((name) => prisma.assetCategory.upsert({ where: { name }, update: { status: RecordStatus.ACTIVE }, create: { name, status: RecordStatus.ACTIVE } })));
   const categoryByName = Object.fromEntries(categories.map((category) => [category.name, category]));
 
-  for (const row of assignedAssetRows) {
-    const user = userByEmail[row.email];
-    const department = user ? departments.find((dept) => dept.id === user.departmentId) : null;
-    const category = categoryByName[row.category];
-    if (!user || !category) continue;
+  await prisma.asset.deleteMany({ where: { tag: "AF-0199" } });
 
+  for (const [email, tag, name, category, serialNumber, location] of assignedAssets) {
+    const user = userByEmail[email];
     await prisma.asset.upsert({
-      where: { tag: row.tag },
-      update: {
-        name: row.name,
-        categoryId: category.id,
-        location: row.location,
-        condition: row.condition,
-        status: AssetStatus.ALLOCATED,
-        currentHolderId: user.id,
-        currentHolderDepartmentId: user.departmentId,
-      },
-      create: {
-        tag: row.tag,
-        name: row.name,
-        categoryId: category.id,
-        serialNumber: row.serialNumber,
-        acquisitionDate: new Date("2025-05-01"),
-        acquisitionCost: row.cost,
-        condition: row.condition,
-        location: row.location,
-        isBookable: false,
-        status: AssetStatus.ALLOCATED,
-        currentHolderId: user.id,
-        currentHolderDepartmentId: user.departmentId,
-      },
+      where: { tag },
+      update: { name, categoryId: categoryByName[category].id, location, status: "ALLOCATED", currentHolderId: user.id, currentHolderDepartmentId: user.departmentId },
+      create: { tag, name, categoryId: categoryByName[category].id, serialNumber, acquisitionDate: new Date("2025-05-01"), acquisitionCost: "1000.00", condition: "Good", location, isBookable: false, status: "ALLOCATED", currentHolderId: user.id, currentHolderDepartmentId: user.departmentId },
     });
   }
 
-  for (const row of bookableAssetRows) {
-    const category = categoryByName[row.category];
-    if (!category) continue;
-
+  for (const [tag, name, category, serialNumber, location] of bookableAssets) {
     await prisma.asset.upsert({
-      where: { tag: row.tag },
-      update: {
-        name: row.name,
-        categoryId: category.id,
-        location: row.location,
-        condition: row.condition,
-        isBookable: true,
-        status: row.tag === "AF-0124" ? AssetStatus.RESERVED : AssetStatus.AVAILABLE,
-      },
-      create: {
-        tag: row.tag,
-        name: row.name,
-        categoryId: category.id,
-        serialNumber: row.serialNumber,
-        acquisitionDate: new Date("2024-09-15"),
-        acquisitionCost: row.cost,
-        condition: row.condition,
-        location: row.location,
-        isBookable: true,
-        status: row.tag === "AF-0124" ? AssetStatus.RESERVED : AssetStatus.AVAILABLE,
-      },
+      where: { tag },
+      update: { name, categoryId: categoryByName[category].id, location, isBookable: true, status: tag === "AF-0124" ? "RESERVED" : "AVAILABLE" },
+      create: { tag, name, categoryId: categoryByName[category].id, serialNumber, acquisitionDate: new Date("2024-09-15"), acquisitionCost: "5000.00", condition: "Good", location, isBookable: true, status: tag === "AF-0124" ? "RESERVED" : "AVAILABLE" },
     });
   }
 
-  const assets = await prisma.asset.findMany({
-    where: { tag: { in: [...assignedAssetRows.map((row) => row.tag), ...bookableAssetRows.map((row) => row.tag)] } },
-  });
+  const assets = await prisma.asset.findMany({ where: { tag: { in: [...assignedAssets.map((row) => row[1]), ...bookableAssets.map((row) => row[0])] } } });
   const assetByTag = Object.fromEntries(assets.map((asset) => [asset.tag, asset]));
-  const now = new Date();
 
-  for (const row of assignedAssetRows) {
-    const user = userByEmail[row.email];
-    const asset = assetByTag[row.tag];
-    if (!user || !asset) continue;
-
-    await createIfMissing(
-      prisma.allocation,
-      { assetId: asset.id, employeeId: user.id, status: AllocationStatus.ACTIVE },
-      {
-        assetId: asset.id,
-        employeeId: user.id,
-        departmentId: user.departmentId,
-        allocatedAt: new Date("2026-04-01T09:00:00Z"),
-        expectedReturnDate: new Date("2026-12-15T09:00:00Z"),
-        status: AllocationStatus.ACTIVE,
-      },
-    );
-
-    await createIfMissing(
-      prisma.allocation,
-      { assetId: asset.id, employeeId: user.id, status: AllocationStatus.RETURNED },
-      {
-        assetId: asset.id,
-        employeeId: user.id,
-        departmentId: user.departmentId,
-        allocatedAt: new Date("2025-10-10T09:00:00Z"),
-        expectedReturnDate: new Date("2026-01-15T09:00:00Z"),
-        returnedAt: new Date("2026-01-12T16:30:00Z"),
-        returnConditionNotes: "Returned during demo reassignment cycle.",
-        status: AllocationStatus.RETURNED,
-      },
-    );
+  for (const [email, tag] of assignedAssets) {
+    const user = userByEmail[email];
+    const asset = assetByTag[tag];
+    await firstOrCreate(prisma.allocation, { assetId: asset.id, employeeId: user.id, status: "ACTIVE" }, { assetId: asset.id, employeeId: user.id, departmentId: user.departmentId, allocatedAt: new Date("2026-04-01T09:00:00Z"), expectedReturnDate: new Date("2026-12-15T09:00:00Z"), status: "ACTIVE" });
+    await firstOrCreate(prisma.allocation, { assetId: asset.id, employeeId: user.id, status: "RETURNED" }, { assetId: asset.id, employeeId: user.id, departmentId: user.departmentId, allocatedAt: new Date("2025-10-10T09:00:00Z"), expectedReturnDate: new Date("2026-01-15T09:00:00Z"), returnedAt: new Date("2026-01-12T16:30:00Z"), returnConditionNotes: "Returned during demo reassignment cycle.", status: "RETURNED" });
   }
 
-  for (const row of bookingRows) {
-    const user = userByEmail[row.email];
-    const asset = assetByTag[row.assetTag];
-    if (!user || !asset) continue;
-
-    const startTime = new Date(now.getTime() + row.offsetHours * 60 * 60 * 1000);
+  const now = Date.now();
+  for (const [email, tag, status, offsetHours] of bookingRows) {
+    const user = userByEmail[email];
+    const asset = assetByTag[tag];
+    const startTime = new Date(now + offsetHours * 60 * 60 * 1000);
     const endTime = new Date(startTime.getTime() + 90 * 60 * 1000);
-    await createIfMissing(
-      prisma.booking,
-      { assetId: asset.id, bookedById: user.id, status: row.status },
-      { assetId: asset.id, bookedById: user.id, startTime, endTime, status: row.status },
-    );
+    await firstOrCreate(prisma.booking, { assetId: asset.id, bookedById: user.id, status }, { assetId: asset.id, bookedById: user.id, startTime, endTime, status });
   }
 
-  for (const row of maintenanceRows) {
-    const user = userByEmail[row.email];
-    const asset = assetByTag[row.assetTag];
-    if (!user || !asset) continue;
-
-    await createIfMissing(
-      prisma.maintenanceRequest,
-      { assetId: asset.id, raisedById: user.id, status: row.status },
-      {
-        assetId: asset.id,
-        raisedById: user.id,
-        issueDescription: row.issue,
-        priority: row.priority,
-        status: row.status,
-        technicianName: row.status === MaintenanceStatus.TECHNICIAN_ASSIGNED || row.status === MaintenanceStatus.IN_PROGRESS ? "Demo Technician" : null,
-        raisedAt: new Date("2026-06-01T10:00:00Z"),
-        resolvedAt: row.status === MaintenanceStatus.RESOLVED ? new Date("2026-06-05T15:30:00Z") : null,
-      },
-    );
+  for (const [email, tag, issueDescription, priority, status] of maintenanceRows) {
+    const user = userByEmail[email];
+    const asset = assetByTag[tag];
+    await firstOrCreate(prisma.maintenanceRequest, { assetId: asset.id, raisedById: user.id, status }, { assetId: asset.id, raisedById: user.id, issueDescription, priority, status, technicianName: ["TECHNICIAN_ASSIGNED", "IN_PROGRESS"].includes(status) ? "Demo Technician" : null, raisedAt: new Date("2026-06-01T10:00:00Z"), resolvedAt: status === "RESOLVED" ? new Date("2026-06-05T15:30:00Z") : null });
   }
 
-  for (const row of transferRows) {
-    const fromEmployee = userByEmail[row.from];
-    const toEmployee = userByEmail[row.to];
-    const asset = assetByTag[row.assetTag];
-    if (!fromEmployee || !toEmployee || !asset) continue;
-
-    await createIfMissing(
-      prisma.transferRequest,
-      { assetId: asset.id, fromEmployeeId: fromEmployee.id, toEmployeeId: toEmployee.id, status: row.status },
-      {
-        assetId: asset.id,
-        fromEmployeeId: fromEmployee.id,
-        toEmployeeId: toEmployee.id,
-        reason: "Demo reassignment request for department coverage.",
-        status: row.status,
-        requestedAt: new Date("2026-06-10T11:00:00Z"),
-        decidedAt: row.status === TransferRequestStatus.REQUESTED ? null : new Date("2026-06-11T12:00:00Z"),
-        decidedById: row.status === TransferRequestStatus.REQUESTED ? null : fromEmployee.id,
-      },
-    );
+  for (const [from, to, tag, status] of transferRows) {
+    const fromEmployee = userByEmail[from];
+    const toEmployee = userByEmail[to];
+    const asset = assetByTag[tag];
+    await firstOrCreate(prisma.transferRequest, { assetId: asset.id, fromEmployeeId: fromEmployee.id, toEmployeeId: toEmployee.id, status }, { assetId: asset.id, fromEmployeeId: fromEmployee.id, toEmployeeId: toEmployee.id, reason: "Demo reassignment request for department coverage.", status, requestedAt: new Date("2026-06-10T11:00:00Z"), decidedAt: status === "REQUESTED" ? null : new Date("2026-06-11T12:00:00Z"), decidedById: status === "REQUESTED" ? null : fromEmployee.id });
   }
 
-  console.log("Added/updated 5 departments, 12 users, 16 assets, and rich employee demo activity without deleting existing data.");
+  console.log("Verified demo data:", {
+    af01Assets: await prisma.asset.count({ where: { tag: { startsWith: "AF-01" } } }),
+    demoAllocations: await prisma.allocation.count({ where: { asset: { tag: { startsWith: "AF-01" } } } }),
+    demoBookings: await prisma.booking.count({ where: { asset: { tag: { startsWith: "AF-01" } } } }),
+    demoMaintenance: await prisma.maintenanceRequest.count({ where: { asset: { tag: { startsWith: "AF-01" } } } }),
+    demoTransfers: await prisma.transferRequest.count({ where: { asset: { tag: { startsWith: "AF-01" } } } }),
+  });
 }
 
 main()
