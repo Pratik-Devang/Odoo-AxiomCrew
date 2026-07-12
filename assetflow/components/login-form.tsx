@@ -206,7 +206,7 @@ export function LoginForm({ redirectTo = "/dashboard", accountCreated = false })
         </button>
 
         {credentialsOpen && (
-          <div className="absolute left-0 right-0 z-20 mt-1 border-2 border-ink bg-surface shadow-md">
+          <div className="absolute left-0 right-0 z-20 mt-1 max-h-80 overflow-y-auto border-2 border-ink bg-surface shadow-md">
             {demoCredentials.map((account) => (
               <button
                 key={account.email}
