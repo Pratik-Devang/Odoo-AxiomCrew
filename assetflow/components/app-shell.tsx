@@ -41,7 +41,14 @@ const roleMeta: Record<string, { label: string; chipClass: string }> = {
   EMPLOYEE:        { label: "Employee",      chipClass: "border-ink3   bg-ink2   text-white" },
 };
 
-export function AppShell({ children, role }: { children: ReactNode; role: UserRole | null }) {
+interface UserProp {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
+export function AppShell({ children, user }: { children: ReactNode; user: UserProp | null }) {
   const pathname = usePathname();
 
   const handleLogout = async () => {
@@ -58,13 +65,17 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
       ? pathname === "/dashboard" || pathname === "/"
       : pathname === href || pathname.startsWith(`${href}/`);
 
-  const activeRole = role ?? "EMPLOYEE";
+  const activeRole = user?.role ?? "EMPLOYEE";
   const meta = roleMeta[activeRole];
-  const userInitials = activeRole.slice(0, 2).toUpperCase();
-  const userName = activeRole === "ADMIN" ? "Avery Admin"
-    : activeRole === "ASSET_MANAGER" ? "Asset Manager"
-    : activeRole === "DEPARTMENT_HEAD" ? "Dept Head"
-    : "Employee";
+  const userName = user?.name ?? "Guest User";
+  const userInitials = user?.name
+    ? user.name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "GU";
 
   return (
     <div className="flex min-h-[100dvh]">
@@ -84,28 +95,35 @@ export function AppShell({ children, role }: { children: ReactNode; role: UserRo
             Navigation
           </p>
 
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "flex items-center gap-2.5 px-2 py-2 text-xs font-medium transition-colors border-l-2",
-                  active
-                    ? "border-signal bg-white/10 text-white"
-                    : "border-transparent text-white/50 hover:bg-white/8 hover:text-white hover:border-white/20"
-                )}
-              >
-                <Icon size={14} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => {
+              if (item.href === "/audits" || item.href === "/reports") {
+                return activeRole === "ADMIN" || activeRole === "ASSET_MANAGER";
+              }
+              return true;
+            })
+            .map((item) => {
+              const active = isActive(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={clsx(
+                    "flex items-center gap-2.5 px-2 py-2 text-xs font-medium transition-colors border-l-2",
+                    active
+                      ? "border-signal bg-white/10 text-white"
+                      : "border-transparent text-white/50 hover:bg-white/8 hover:text-white hover:border-white/20"
+                  )}
+                >
+                  <Icon size={14} />
+                  {item.label}
+                </Link>
+              );
+            })}
 
           {/* Admin-only section */}
-          {(activeRole === "ADMIN" || activeRole === "ASSET_MANAGER") && (
+          {activeRole === "ADMIN" && (
             <>
               <div className="my-3 border-t border-white/10" />
               <p className="mb-2 px-2 text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">

@@ -321,6 +321,16 @@ export default function AuditsPage() {
     );
   };
 
+  if (!isLoading && currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "ASSET_MANAGER") {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle size={32} className="text-danger mb-3" />
+        <h2 className="text-lg font-bold text-ink uppercase tracking-wider">Access Denied</h2>
+        <p className="text-sm text-ink3 mt-1">You do not have permission to view this page.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col min-h-[calc(100vh-8rem)]">
       {selectedCycle ? (

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileDown, Loader2 } from "lucide-react";
+import { FileDown, Loader2, AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 
@@ -40,6 +40,7 @@ function exportCsv(data: ReportPayload) {
 export default function ReportsPage() {
   const [data, setData] = useState<ReportPayload | null>(null);
   const [error, setError] = useState("");
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,8 +49,9 @@ export default function ReportsPage() {
       try {
         const response = await fetch("/api/reports", { cache: "no-store" });
 
-        if (!response.ok) {
-          throw new Error("Unable to load reports");
+        if (response.status === 403 || response.status === 401) {
+          if (!cancelled) setIsUnauthorized(true);
+          return;
         }
 
         const payload = (await response.json()) as ReportPayload;
@@ -72,6 +74,16 @@ export default function ReportsPage() {
   }, []);
 
   const totalUsage = useMemo(() => data?.departmentUsage.reduce((sum, item) => sum + item.count, 0) ?? 0, [data]);
+
+  if (isUnauthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle size={32} className="text-danger mb-3" />
+        <h2 className="text-lg font-bold text-ink uppercase tracking-wider">Access Denied</h2>
+        <p className="text-sm text-ink3 mt-1">You do not have permission to view reports.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
