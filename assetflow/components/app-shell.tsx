@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Sparkles,
   LogOut,
   Shield,
   type LucideIcon,
@@ -32,6 +33,7 @@ type NavItem = {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Assets", href: "/assets", icon: Package },
+  { label: "AssistFlow", href: "/assistant", icon: Sparkles },
   { label: "Allocations", href: "/allocations", icon: ArrowLeftRight },
   { label: "Resource Booking", href: "/resource-booking", icon: CalendarDays },
   { label: "Maintenance", href: "/maintenance", icon: Wrench },
