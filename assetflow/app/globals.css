@@ -2,31 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @layer base {
   :root {
-    color-scheme: dark;
-  }
-
-  * {
-    @apply border-gray-800;
+    color-scheme: light;
   }
 
   html,
   body {
-    @apply min-h-full bg-af-background text-gray-100;
+    @apply min-h-full bg-canvas text-ink;
   }
 
   body {
-    @apply antialiased;
+    @apply antialiased font-sans;
+  }
+
+  * {
+    @apply border-border;
   }
 }
 
 @layer components {
-  .af-panel {
-    @apply rounded-2xl border border-gray-800 bg-af-panel;
+  /* Input base style */
+  .af-input {
+    @apply w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition
+      placeholder:text-ink3
+      focus:border-signal focus:ring-1 focus:ring-signal/30;
   }
 
-  .af-primary-button {
-    @apply rounded-md border border-af-green bg-af-green px-4 py-2 text-sm font-medium text-green-100 transition-colors hover:border-green-400 hover:text-green-400;
+  /* Primary action button */
+  .af-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-signal px-4 py-2 text-sm font-medium text-white transition
+      hover:bg-signal2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* Secondary / outline button */
+  .af-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink2 transition
+      hover:bg-sunken;
+  }
+
+  /* Danger button */
+  .af-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-danger px-4 py-2 text-sm font-medium text-white transition
+      hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* Table header cell */
+  .af-th {
+    @apply sticky top-0 z-10 bg-surface px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-ink3 border-b border-border2;
+  }
+
+  /* Table data cell */
+  .af-td {
+    @apply px-4 py-3 text-sm text-ink border-b border-border;
+  }
+
+  /* Card */
+  .af-card {
+    @apply rounded-lg border border-border bg-surface shadow-sm;
+  }
+
+  /* Section heading */
+  .af-section-head {
+    @apply text-xs font-semibold uppercase tracking-widest text-ink3;
+  }
+
+  /* Status chip base */
+  .af-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Kanban card */
+  .af-kanban-card {
+    @apply rounded-lg border border-border bg-surface p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer;
+  }
+
+  /* Skeleton */
+  .af-skeleton {
+    @apply bg-sunken animate-pulse rounded;
   }
 }

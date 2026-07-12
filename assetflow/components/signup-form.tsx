@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+const inputCls =
+  "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink3 focus:border-signal focus:ring-1 focus:ring-signal/30";
+
 export function SignupForm() {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -41,54 +44,80 @@ export function SignupForm() {
     }
   }
 
-  const inputClassName =
-    "w-full rounded-lg border border-gray-700 bg-[#111315] px-3.5 py-2.5 text-sm text-gray-100 outline-none transition placeholder:text-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500/40";
-
   return (
-    <>
-      <p className="mb-6 text-center text-sm text-gray-400">Create your employee account</p>
-
+    <div className="space-y-5">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-gray-300">
+          <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-ink2">
             Full name
           </label>
-          <input id="name" name="name" autoComplete="name" required minLength={2} placeholder="Alex Morgan" className={inputClassName} />
+          <input
+            id="name"
+            name="name"
+            autoComplete="name"
+            required
+            minLength={2}
+            placeholder="Alex Morgan"
+            className={inputCls}
+          />
         </div>
+
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-gray-300">
-            Email
+          <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-ink2">
+            Email address
           </label>
-          <input id="email" name="email" type="email" autoComplete="email" required placeholder="name@company.com" className={inputClassName} />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="name@company.com"
+            className={inputCls}
+          />
         </div>
+
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-gray-300">
+          <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-ink2">
             Password
           </label>
-          <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters" className={inputClassName} />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            placeholder="At least 8 characters"
+            className={inputCls}
+          />
         </div>
 
-        <p className="text-xs leading-5 text-gray-500">
-          New accounts are created as employees. Admin roles are assigned later.
+        <p className="text-xs text-ink3 leading-relaxed">
+          Your account will be reviewed. Role access is granted by your administrator.
         </p>
 
-        {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
+        {error && (
+          <p role="alert" className="rounded-md border border-danger/30 bg-danger_bg px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg border border-green-500/50 bg-af-green px-4 py-2.5 text-sm font-semibold text-green-100 transition hover:border-green-400 hover:text-green-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-md bg-signal px-4 py-2 text-sm font-medium text-white transition hover:bg-signal2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Creating account…" : "Create Account"}
         </button>
       </form>
 
-      <div className="mt-6 border-t border-gray-800 pt-5 text-center text-sm text-gray-400">
+      <div className="border-t border-border pt-4 text-center text-sm text-ink3">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-green-400 hover:text-green-300">
+        <Link href="/login" className="font-medium text-signal transition hover:text-signal2">
           Sign in
         </Link>
       </div>
-    </>
+    </div>
   );
 }

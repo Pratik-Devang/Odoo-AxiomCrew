@@ -3,7 +3,7 @@ import { SignupForm } from "@/components/signup-form";
 
 export default function SignupPage() {
   return (
-    <AuthCard>
+    <AuthCard title="Create account" subtitle="Get started with AssetFlow">
       <SignupForm />
     </AuthCard>
   );

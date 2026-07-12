@@ -10,9 +10,9 @@ type LoginPageProps = {
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
-    <AuthCard>
+    <AuthCard title="Welcome back" subtitle="Sign in to your AssetFlow account">
       <LoginForm
-        redirectTo={searchParams?.next ?? "/"}
+        redirectTo={searchParams?.next ?? "/dashboard"}
         accountCreated={searchParams?.created === "1"}
       />
     </AuthCard>
