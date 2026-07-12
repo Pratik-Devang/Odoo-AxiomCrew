@@ -3,11 +3,8 @@ import { AuthCard } from "@/components/auth-card";
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthCard title="Check your email">
+    <AuthCard title="Check your email" subtitle="Password reset instructions will be sent if the account exists">
       <div className="text-center">
-        <p className="mt-2 text-sm leading-6 text-gray-400">
-          If an AssetFlow account exists for that address, password reset instructions will be sent.
-        </p>
         <p className="mt-3 text-xs text-gray-500">Email sending is disabled in this demo.</p>
         <Link
           href="/login"

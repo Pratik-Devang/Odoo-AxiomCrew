@@ -5,6 +5,7 @@ export type BadgeStatus =
   | "inactive"
   | "available"
   | "allocated"
+  | "reserved"
   | "maintenance"
   | "lost"
   | "retired"
@@ -27,8 +28,9 @@ const statusConfig: Record<BadgeStatus, { label: string; tone: keyof typeof badg
   active: { label: "Active", tone: "success" },
   inactive: { label: "Inactive", tone: "neutral" },
   available: { label: "Available", tone: "success" },
-  allocated: { label: "Allocated", tone: "warning" },
-  maintenance: { label: "Maintenance", tone: "warning" },
+  allocated: { label: "Allocated", tone: "neutral" },
+  reserved: { label: "Reserved", tone: "warning" },
+  maintenance: { label: "Under Maintenance", tone: "warning" },
   lost: { label: "Lost", tone: "danger" },
   retired: { label: "Retired", tone: "neutral" },
   disposed: { label: "Disposed", tone: "neutral" },

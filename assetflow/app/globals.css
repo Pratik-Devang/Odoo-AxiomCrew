@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @layer base {
   :root {
     color-scheme: light;
@@ -18,69 +16,68 @@
     @apply antialiased font-sans;
   }
 
+  /* Default all borders to solid 1.5px ink */
   * {
-    @apply border-border;
+    @apply border-ink;
   }
 }
 
 @layer components {
-  /* Input base style */
+  /* Flat input: sharp, solid border, custom outline focus */
   .af-input {
-    @apply w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition
+    @apply w-full rounded-none border-2 border-ink bg-surface px-3.5 py-2 text-sm text-ink outline-none transition
       placeholder:text-ink3
-      focus:border-signal focus:ring-1 focus:ring-signal/30;
+      focus:border-signal focus:ring-0;
   }
 
-  /* Primary action button */
+  /* Primary flat button: 0px rounded, bold fill, active translate effect */
   .af-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-signal px-4 py-2 text-sm font-medium text-white transition
-      hover:bg-signal2 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-signal px-5 py-2 text-sm font-semibold text-white transition-all
+      hover:bg-signal2 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Secondary / outline button */
+  /* Secondary flat button: sharp, outline style */
   .af-btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink2 transition
-      hover:bg-sunken;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-surface px-4 py-1.5 text-xs font-semibold text-ink transition-all
+      hover:bg-sunken active:translate-y-[1px];
   }
 
-  /* Danger button */
+  /* Danger flat button: solid red, sharp */
   .af-btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-danger px-4 py-2 text-sm font-medium text-white transition
-      hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-ink bg-danger px-5 py-2 text-sm font-semibold text-white transition-all
+      hover:bg-red-700 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Table header cell */
+  /* Dense flat table cells */
   .af-th {
-    @apply sticky top-0 z-10 bg-surface px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-ink3 border-b border-border2;
+    @apply sticky top-0 z-10 bg-surface px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-ink border-b-2 border-ink;
   }
 
-  /* Table data cell */
   .af-td {
-    @apply px-4 py-3 text-sm text-ink border-b border-border;
+    @apply px-4 py-3 text-sm text-ink border-b border-ink/20;
   }
 
-  /* Card */
+  /* Flat cards: 0px rounded, solid borders, zero shadows */
   .af-card {
-    @apply rounded-lg border border-border bg-surface shadow-sm;
+    @apply rounded-none border-2 border-ink bg-surface shadow-none;
   }
 
-  /* Section heading */
   .af-section-head {
-    @apply text-xs font-semibold uppercase tracking-widest text-ink3;
+    @apply text-xs font-bold uppercase tracking-wider text-ink3;
   }
 
-  /* Status chip base */
+  /* Flat chips: solid border and flat backgrounds */
   .af-chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-none border border-ink px-2 py-0.5 text-xs font-semibold;
   }
 
   /* Kanban card */
   .af-kanban-card {
-    @apply rounded-lg border border-border bg-surface p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer;
+    @apply rounded-none border-2 border-ink bg-surface p-4 mb-3 shadow-none hover:bg-sunken/45 transition-colors cursor-pointer;
   }
 
-  /* Skeleton */
+  /* Skeletons */
   .af-skeleton {
-    @apply bg-sunken animate-pulse rounded;
+    @apply bg-sunken animate-pulse rounded-none;
   }
 }

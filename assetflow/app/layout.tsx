@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
-import { getSession } from "@/lib/auth";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,12 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const session = getSession();
-
   return (
     <html lang="en" className={`h-full ${inter.variable}`}>
       <body className="min-h-full font-sans bg-canvas text-ink antialiased">
-        <AppShell role={session?.role ?? null}>{children}</AppShell>
+        {children}
       </body>
     </html>
   );
