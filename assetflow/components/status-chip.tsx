@@ -1,54 +1,43 @@
 import clsx from "clsx";
 
-type AssetStatus =
-  | "AVAILABLE"
-  | "ALLOCATED"
-  | "RESERVED"
-  | "UNDER_MAINTENANCE"
-  | "LOST"
-  | "RETIRED"
-  | "DISPOSED";
+// Flat Design: solid-border chips, no rounded-full, no soft backgrounds
 
-const statusConfig: Record<
-  AssetStatus,
-  { label: string; bg: string; text: string; dot?: boolean }
-> = {
-  AVAILABLE:         { label: "Available",          bg: "bg-go_bg",     text: "text-go",     dot: true },
-  ALLOCATED:         { label: "Allocated",          bg: "bg-signal/10", text: "text-signal",  dot: false },
-  RESERVED:          { label: "Reserved",           bg: "bg-warn_bg",   text: "text-warn",    dot: true },
-  UNDER_MAINTENANCE: { label: "Under Maintenance",  bg: "bg-violet_bg", text: "text-violet",  dot: true },
-  LOST:              { label: "Lost",               bg: "bg-danger_bg", text: "text-danger",  dot: true },
-  RETIRED:           { label: "Retired",            bg: "bg-gray_bg",   text: "text-ink2",    dot: false },
-  DISPOSED:          { label: "Disposed",           bg: "bg-gray_bg",   text: "text-ink3",    dot: false },
+type AssetStatus = "AVAILABLE" | "ALLOCATED" | "RESERVED" | "UNDER_MAINTENANCE" | "LOST" | "RETIRED" | "DISPOSED";
+
+const statusConfig: Record<AssetStatus, { label: string; border: string; bg: string; text: string }> = {
+  AVAILABLE:         { label: "Available",         border: "border-go",      bg: "bg-go_bg",     text: "text-go" },
+  ALLOCATED:         { label: "Allocated",         border: "border-signal",  bg: "bg-surface",   text: "text-signal" },
+  RESERVED:          { label: "Reserved",          border: "border-warn",    bg: "bg-warn_bg",   text: "text-warn" },
+  UNDER_MAINTENANCE: { label: "Under Maint.",      border: "border-violet",  bg: "bg-violet_bg", text: "text-violet" },
+  LOST:              { label: "Lost",              border: "border-danger",  bg: "bg-danger_bg", text: "text-danger" },
+  RETIRED:           { label: "Retired",           border: "border-ink3",    bg: "bg-canvas",    text: "text-ink3" },
+  DISPOSED:          { label: "Disposed",          border: "border-ink3",    bg: "bg-canvas",    text: "text-ink3" },
 };
 
-// Booking status
 type BookingStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
-const bookingConfig: Record<BookingStatus, { label: string; bg: string; text: string }> = {
-  UPCOMING:  { label: "Upcoming",  bg: "bg-signal/10", text: "text-signal" },
-  ONGOING:   { label: "Ongoing",   bg: "bg-go_bg",     text: "text-go" },
-  COMPLETED: { label: "Completed", bg: "bg-gray_bg",   text: "text-ink3" },
-  CANCELLED: { label: "Cancelled", bg: "bg-danger_bg", text: "text-danger" },
+const bookingConfig: Record<BookingStatus, { label: string; border: string; bg: string; text: string }> = {
+  UPCOMING:  { label: "Upcoming",  border: "border-signal", bg: "bg-surface",   text: "text-signal" },
+  ONGOING:   { label: "Ongoing",   border: "border-go",     bg: "bg-go_bg",     text: "text-go" },
+  COMPLETED: { label: "Completed", border: "border-ink3",   bg: "bg-canvas",    text: "text-ink3" },
+  CANCELLED: { label: "Cancelled", border: "border-danger", bg: "bg-danger_bg", text: "text-danger" },
 };
 
-// Maintenance status
 type MaintenanceStatus = "PENDING" | "APPROVED" | "REJECTED" | "TECHNICIAN_ASSIGNED" | "IN_PROGRESS" | "RESOLVED";
-const maintenanceConfig: Record<MaintenanceStatus, { label: string; bg: string; text: string }> = {
-  PENDING:            { label: "Pending",            bg: "bg-warn_bg",   text: "text-warn" },
-  APPROVED:           { label: "Approved",           bg: "bg-signal/10", text: "text-signal" },
-  REJECTED:           { label: "Rejected",           bg: "bg-danger_bg", text: "text-danger" },
-  TECHNICIAN_ASSIGNED:{ label: "Assigned",           bg: "bg-violet_bg", text: "text-violet" },
-  IN_PROGRESS:        { label: "In Progress",        bg: "bg-signal/10", text: "text-signal" },
-  RESOLVED:           { label: "Resolved",           bg: "bg-go_bg",     text: "text-go" },
+const maintenanceConfig: Record<MaintenanceStatus, { label: string; border: string; bg: string; text: string }> = {
+  PENDING:             { label: "Pending",    border: "border-warn",   bg: "bg-warn_bg",   text: "text-warn" },
+  APPROVED:            { label: "Approved",   border: "border-signal", bg: "bg-surface",   text: "text-signal" },
+  REJECTED:            { label: "Rejected",   border: "border-danger", bg: "bg-danger_bg", text: "text-danger" },
+  TECHNICIAN_ASSIGNED: { label: "Assigned",   border: "border-violet", bg: "bg-violet_bg", text: "text-violet" },
+  IN_PROGRESS:         { label: "In Progress",border: "border-signal", bg: "bg-surface",   text: "text-signal" },
+  RESOLVED:            { label: "Resolved",   border: "border-go",     bg: "bg-go_bg",     text: "text-go" },
 };
 
-// Audit verification status
 type AuditVerification = "PENDING" | "VERIFIED" | "MISSING" | "DAMAGED";
-const auditConfig: Record<AuditVerification, { label: string; bg: string; text: string }> = {
-  PENDING:  { label: "Pending",  bg: "bg-warn_bg",   text: "text-warn" },
-  VERIFIED: { label: "Verified", bg: "bg-go_bg",     text: "text-go" },
-  MISSING:  { label: "Missing",  bg: "bg-danger_bg", text: "text-danger" },
-  DAMAGED:  { label: "Damaged",  bg: "bg-violet_bg", text: "text-violet" },
+const auditConfig: Record<AuditVerification, { label: string; border: string; bg: string; text: string }> = {
+  PENDING:  { label: "Pending",  border: "border-warn",   bg: "bg-warn_bg",   text: "text-warn" },
+  VERIFIED: { label: "Verified", border: "border-go",     bg: "bg-go_bg",     text: "text-go" },
+  MISSING:  { label: "Missing",  border: "border-danger", bg: "bg-danger_bg", text: "text-danger" },
+  DAMAGED:  { label: "Damaged",  border: "border-violet", bg: "bg-violet_bg", text: "text-violet" },
 };
 
 interface StatusChipProps {
@@ -59,21 +48,22 @@ interface StatusChipProps {
 export function StatusChip({ status, size = "md" }: StatusChipProps) {
   const allConfigs = { ...statusConfig, ...bookingConfig, ...maintenanceConfig, ...auditConfig } as Record<
     string,
-    { label: string; bg: string; text: string; dot?: boolean }
+    { label: string; border: string; bg: string; text: string }
   >;
 
-  const cfg = allConfigs[status] ?? { label: status, bg: "bg-gray_bg", text: "text-ink2", dot: false };
+  const cfg = allConfigs[status] ?? { label: status, border: "border-ink3", bg: "bg-canvas", text: "text-ink3" };
 
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full font-medium",
-        cfg.bg,
-        cfg.text,
-        size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs"
+        // Flat: sharp corners, solid border, no rounded-full
+        "inline-flex items-center font-bold border",
+        cfg.border, cfg.bg, cfg.text,
+        size === "sm"
+          ? "px-1.5 py-px text-[9px] uppercase tracking-[0.1em]"
+          : "px-2 py-0.5 text-[10px] uppercase tracking-[0.1em]"
       )}
     >
-      {cfg.dot && <span className={clsx("h-1.5 w-1.5 rounded-full", cfg.text.replace("text-", "bg-"))} />}
       {cfg.label}
     </span>
   );

@@ -1,264 +1,184 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
-import { SectionHeader } from "@/components/section-header";
 import { StatusChip } from "@/components/status-chip";
 import { AssetTag } from "@/components/asset-tag";
-import { ClipboardList, Plus, FileDown, CheckCircle2, ChevronRight, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Plus, ClipboardList, CheckSquare, AlertTriangle, ChevronRight } from "lucide-react";
 
-// Mock Audit Cycles
-const initialCycles = [
-  { id: 1, name: "Q3 physical verification", scope: "Technology (Floor 2)", range: "Oct 1 - Oct 15, 2026", auditors: "Elena Torres, Noah Williams", status: "OPEN", progress: 65, total: 20, verified: 13 },
-  { id: 2, name: "Facilities Equipment Review", scope: "Facilities (Warehouse B)", range: "Nov 1 - Nov 10, 2026", auditors: "Marcus Reed", status: "OPEN", progress: 0, total: 15, verified: 0 },
-  { id: 3, name: "Annual Compliance Audit", scope: "All Departments", range: "Jan 5 - Jan 25, 2026", auditors: "Avery Admin", status: "CLOSED", progress: 100, total: 150, verified: 150 },
+type AuditStatus = "OPEN" | "CLOSED";
+type Verification = "PENDING" | "VERIFIED" | "MISSING" | "DAMAGED";
+
+type AuditCycle = {
+  id: number; name: string; department: string; status: AuditStatus;
+  startDate: string; endDate: string; total: number; verified: number; missing: number; damaged: number;
+};
+
+type AuditItem = {
+  id: number; tag: string; asset: string; location: string; verification: Verification; auditor: string;
+};
+
+const auditCycles: AuditCycle[] = [
+  { id: 1, name: "Q4 2025 — Technology",  department: "Technology", status: "OPEN",   startDate: "Dec 1, 2025",  endDate: "Dec 31, 2025", total: 45, verified: 38, missing: 2, damaged: 1 },
+  { id: 2, name: "Q4 2025 — Operations",  department: "Operations", status: "OPEN",   startDate: "Dec 1, 2025",  endDate: "Dec 31, 2025", total: 28, verified: 18, missing: 0, damaged: 3 },
+  { id: 3, name: "Q3 2025 — Facilities",  department: "Facilities", status: "CLOSED", startDate: "Sep 1, 2025",  endDate: "Sep 30, 2025", total: 17, verified: 17, missing: 0, damaged: 0 },
 ];
 
-// Mock Assets in Scope for Cycle 1
-const initialAuditItems = [
-  { id: 1, tag: "AF-0001", name: "Dell XPS 15 Laptop", expectedLocation: "Floor 2, Desk 14", verification: "VERIFIED", notes: "Verified in physical possession of Priya Shah" },
-  { id: 2, tag: "AF-0006", name: "MacBook Pro 14\"", expectedLocation: "Floor 2, Desk 22", verification: "PENDING", notes: "" },
-  { id: 3, tag: "AF-0009", name: "Cisco IP Phone 8800", expectedLocation: "Store Room B", verification: "MISSING", notes: "Not found in store room during check" },
-  { id: 4, tag: "AF-0012", name: "Ergonomic Keyboard", expectedLocation: "Store Room A", verification: "DAMAGED", notes: "USB port loose, needs maintenance" },
+const auditItems: AuditItem[] = [
+  { id: 1, tag: "AF-0001", asset: "Dell XPS 15 Laptop",  location: "Floor 2, Desk 14",  verification: "VERIFIED", auditor: "Elena T." },
+  { id: 2, tag: "AF-0003", asset: "Canon EOS R6 Camera", location: "Service Center",     verification: "MISSING",  auditor: "Elena T." },
+  { id: 3, tag: "AF-0006", asset: "MacBook Pro 14\"",    location: "Floor 2, Desk 22",  verification: "VERIFIED", auditor: "Marcus R." },
+  { id: 4, tag: "AF-0008", asset: "Toyota HiAce Van",    location: "Parking Lot B",     verification: "DAMAGED",  auditor: "Marcus R." },
+  { id: 5, tag: "AF-0009", asset: "Cisco IP Phone",      location: "Store Room B",      verification: "PENDING",  auditor: "—" },
+  { id: 6, tag: "AF-0012", asset: "Keyboard + Mouse Set",location: "Store Room A",      verification: "VERIFIED", auditor: "Elena T." },
 ];
 
 export default function AuditsPage() {
-  const [cycles, setCycles] = useState(initialCycles);
-  const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
-  const [auditItems, setAuditItems] = useState(initialAuditItems);
-  const [activeItemIndex, setActiveItemIndex] = useState(1); // MacBook Pro is pending
+  const [selectedCycle, setSelectedCycle] = useState<AuditCycle | null>(auditCycles[0]);
 
-  const selectedCycle = cycles.find(c => c.id === selectedCycleId);
-  const activeItem = auditItems[activeItemIndex];
-
-  const handleVerify = (status: "VERIFIED" | "MISSING" | "DAMAGED", notes: string) => {
-    const updated = auditItems.map((item, idx) => {
-      if (idx === activeItemIndex) {
-        return { ...item, verification: status, notes };
-      }
-      return item;
-    });
-    setAuditItems(updated);
-    
-    // Auto-advance to next pending item if available
-    const nextPending = updated.findIndex((item, idx) => idx > activeItemIndex && item.verification === "PENDING");
-    if (nextPending !== -1) {
-      setActiveItemIndex(nextPending);
-    }
-  };
-
-  const handleCloseCycle = () => {
-    if (!selectedCycleId) return;
-    setCycles(cycles.map(c => c.id === selectedCycleId ? { ...c, status: "CLOSED", progress: 100 } : c));
-  };
+  const pct = selectedCycle ? Math.round((selectedCycle.verified / selectedCycle.total) * 100) : 0;
 
   return (
-    <div>
-      {selectedCycle ? (
-        // Detailed Audit Workspace
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <div>
-          <div className="flex items-center gap-3 mb-6">
-            <button 
-              onClick={() => setSelectedCycleId(null)}
-              className="af-btn-secondary p-2"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight text-ink">{selectedCycle.name}</h1>
-                <StatusChip status={selectedCycle.status} size="sm" />
-              </div>
-              <p className="text-xs text-ink3 mt-0.5">{selectedCycle.scope} · {selectedCycle.range}</p>
-            </div>
-          </div>
+          <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Audits</h1>
+          <p className="text-xs text-ink3 mt-0.5">{auditCycles.filter(c => c.status === "OPEN").length} open cycles</p>
+        </div>
+        <button className="af-btn-primary gap-1.5">
+          <Plus size={13} />
+          New Audit Cycle
+        </button>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Col: List of assets in scope */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="af-card overflow-hidden">
-                <div className="p-4 border-b border-border bg-gray_bg flex items-center justify-between">
-                  <SectionHeader title="Assets In Scope" className="mb-0" />
-                  <span className="text-xs font-semibold text-ink">{auditItems.length} Assets</span>
-                </div>
-                <div className="divide-y divide-border">
-                  {auditItems.map((item, idx) => (
-                    <div 
-                      key={item.id}
-                      onClick={() => setActiveItemIndex(idx)}
-                      className={`flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-sunken transition-colors ${
-                        activeItemIndex === idx ? "bg-sunken/60 border-l-4 border-signal" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <AssetTag tag={item.tag} />
-                        <div>
-                          <p className="text-sm font-semibold text-ink">{item.name}</p>
-                          <p className="text-[10px] text-ink3">Expected at: {item.expectedLocation}</p>
-                        </div>
-                      </div>
-                      <StatusChip status={item.verification} size="sm" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Discrepancy Report Summary */}
-              <div className="af-card p-5 border-l-4 border-danger">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle size={18} className="text-danger" />
-                  <SectionHeader title="Discrepancy Report" className="mb-0 text-danger" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-danger_bg border border-danger/10 rounded p-3">
-                    <p className="text-xs font-medium text-danger">Missing Assets</p>
-                    <p className="text-2xl font-semibold text-danger mt-1">
-                      {auditItems.filter(item => item.verification === "MISSING").length}
-                    </p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Left: cycle list */}
+        <div className="space-y-2">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-ink3">Audit Cycles</p>
+          <div className="border-2 border-ink divide-y-2 divide-ink">
+            {auditCycles.map((cycle) => {
+              const cycPct = Math.round((cycle.verified / cycle.total) * 100);
+              const isSelected = selectedCycle?.id === cycle.id;
+              return (
+                <button
+                  key={cycle.id}
+                  onClick={() => setSelectedCycle(cycle)}
+                  className={`w-full text-left px-4 py-3.5 transition-colors ${isSelected ? "bg-ink text-white" : "bg-surface hover:bg-canvas"}`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <p className={`text-xs font-bold leading-tight ${isSelected ? "text-white" : "text-ink"}`}>{cycle.name}</p>
+                    <span className={`border text-[9px] font-bold uppercase px-1.5 py-px ml-2 shrink-0 ${
+                      cycle.status === "OPEN"
+                        ? isSelected ? "border-signal bg-signal text-white" : "border-go text-go"
+                        : isSelected ? "border-white/30 text-white/50" : "border-ink3 text-ink3"
+                    }`}>
+                      {cycle.status}
+                    </span>
                   </div>
-                  <div className="bg-violet_bg border border-violet/10 rounded p-3">
-                    <p className="text-xs font-medium text-violet">Damaged Assets</p>
-                    <p className="text-2xl font-semibold text-violet mt-1">
-                      {auditItems.filter(item => item.verification === "DAMAGED").length}
-                    </p>
+                  {/* Progress bar */}
+                  <div className={`h-1 w-full ${isSelected ? "bg-white/20" : "bg-sunken"}`}>
+                    <div
+                      className={`h-full ${isSelected ? "bg-signal" : "bg-go"}`}
+                      style={{ width: `${cycPct}%` }}
+                    />
                   </div>
-                </div>
-                {selectedCycle.status === "OPEN" && (
-                  <div className="mt-4 flex gap-3 justify-end">
-                    <button onClick={handleCloseCycle} className="af-btn-danger bg-danger hover:bg-red-700">
-                      Close Audit Cycle & Generate Report
-                    </button>
+                  <div className={`flex justify-between mt-1 text-[9px] ${isSelected ? "text-white/60" : "text-ink3"}`}>
+                    <span>{cycPct}% verified</span>
+                    <span>{cycle.verified}/{cycle.total}</span>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Col: Auditor Action Panel */}
-            <div>
-              {activeItem ? (
-                <div className="af-card p-5 sticky top-20">
-                  <SectionHeader title="Verification Workspace" />
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-[10px] text-ink3 font-semibold uppercase tracking-wider block mb-1">Active Item</span>
-                      <AssetTag tag={activeItem.tag} className="mb-1 inline-block" />
-                      <p className="text-sm font-semibold text-ink">{activeItem.name}</p>
-                      <p className="text-xs text-ink2 mt-1">Location check: <span className="font-mono text-xs">{activeItem.expectedLocation}</span></p>
-                    </div>
-
-                    <div className="border-t border-border pt-4">
-                      <label className="block text-xs font-medium text-ink2 mb-2">Mark Verification Status</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(["VERIFIED", "MISSING", "DAMAGED"] as const).map(status => (
-                          <button
-                            key={status}
-                            onClick={() => handleVerify(status, activeItem.notes)}
-                            className={`af-btn-secondary text-[11px] py-2 border ${
-                              activeItem.verification === status 
-                                ? status === 'VERIFIED' ? 'border-go/40 bg-go_bg text-go' :
-                                  status === 'MISSING' ? 'border-danger/40 bg-danger_bg text-danger' :
-                                  'border-violet/40 bg-violet_bg text-violet'
-                                : ''
-                            }`}
-                          >
-                            {status.toLowerCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-ink2 mb-1.5 font-semibold">Verification Notes</label>
-                      <textarea
-                        value={activeItem.notes}
-                        onChange={(e) => {
-                          const updated = [...auditItems];
-                          updated[activeItemIndex].notes = e.target.value;
-                          setAuditItems(updated);
-                        }}
-                        placeholder="Add location details, serial number checks, or condition observations..."
-                        rows={3}
-                        className="af-input"
-                      />
-                    </div>
-
-                    <button 
-                      onClick={() => handleVerify(activeItem.verification as any, activeItem.notes)} 
-                      className="w-full af-btn-primary"
-                    >
-                      Save Verification
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="af-card p-5 text-center py-12 text-ink3">
-                  Select an item to verify.
-                </div>
-              )}
-            </div>
+                </button>
+              );
+            })}
           </div>
         </div>
-      ) : (
-        // Audit Cycles List
-        <div>
-          <PageHeader 
-            title="Audit Cycles" 
-            action={
-              <button className="af-btn-primary">
-                <Plus size={14} />
-                New Audit Cycle
-              </button>
-            }
-          />
 
-          <div className="af-card overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="af-th">Cycle Name</th>
-                  <th className="af-th">Scope</th>
-                  <th className="af-th">Timeline</th>
-                  <th className="af-th">Auditors</th>
-                  <th className="af-th">Status</th>
-                  <th className="af-th">Progress</th>
-                  <th className="af-th w-8" />
-                </tr>
-              </thead>
-              <tbody>
-                {cycles.map((cycle) => (
-                  <tr 
-                    key={cycle.id}
-                    onClick={() => setSelectedCycleId(cycle.id)}
-                    className="hover:bg-sunken/40 transition-colors cursor-pointer"
-                  >
-                    <td className="af-td font-semibold text-ink">{cycle.name}</td>
-                    <td className="af-td text-ink2">{cycle.scope}</td>
-                    <td className="af-td text-ink3 text-xs">{cycle.range}</td>
-                    <td className="af-td text-ink3 text-xs">{cycle.auditors}</td>
-                    <td className="af-td">
-                      <StatusChip status={cycle.status === "OPEN" ? "PENDING" : "RESOLVED"} size="sm" />
-                    </td>
-                    <td className="af-td">
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 bg-sunken rounded-full h-1.5">
-                          <div 
-                            className="bg-signal rounded-full h-1.5" 
-                            style={{ width: `${cycle.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold text-ink">{cycle.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="af-td">
-                      <ChevronRight size={14} className="text-ink3" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Right: detail panel */}
+        {selectedCycle && (
+          <div className="lg:col-span-2 space-y-4">
+            {/* KPI row */}
+            <div className="flex gap-px border-2 border-ink bg-ink">
+              {[
+                { label: "Total",    value: selectedCycle.total,    color: "bg-surface" },
+                { label: "Verified", value: selectedCycle.verified,  color: "bg-go_bg" },
+                { label: "Missing",  value: selectedCycle.missing,   color: "bg-danger_bg" },
+                { label: "Damaged",  value: selectedCycle.damaged,   color: "bg-warn_bg" },
+              ].map((stat) => (
+                <div key={stat.label} className={`flex-1 ${stat.color} px-4 py-3`}>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-ink3">{stat.label}</p>
+                  <p className="text-2xl font-bold text-ink">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Progress bar */}
+            <div className="border-2 border-ink bg-surface px-4 py-3">
+              <div className="flex justify-between mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-ink3">Verification Progress</p>
+                <p className="text-xs font-bold text-ink">{pct}%</p>
+              </div>
+              <div className="h-3 w-full bg-canvas border border-ink/20">
+                <div className="h-full bg-signal transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+
+            {/* Discrepancy alerts */}
+            {(selectedCycle.missing > 0 || selectedCycle.damaged > 0) && (
+              <div className="flex items-center gap-3 border-2 border-warn bg-warn_bg px-4 py-3">
+                <AlertTriangle size={14} className="text-warn shrink-0" />
+                <p className="text-xs font-bold text-warn">
+                  {selectedCycle.missing} missing, {selectedCycle.damaged} damaged — review required.
+                </p>
+              </div>
+            )}
+
+            {/* Items table */}
+            <div className="border-2 border-ink bg-surface overflow-hidden">
+              <div className="border-b-2 border-ink bg-canvas px-4 py-2.5 flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-ink">
+                  <ClipboardList size={12} className="inline mr-1.5 mb-px" />
+                  Checksheet
+                </p>
+                <span className="text-[9px] text-ink3">{auditItems.length} items</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-canvas">
+                      <th className="af-th">Tag</th>
+                      <th className="af-th">Asset</th>
+                      <th className="af-th">Location</th>
+                      <th className="af-th">Verification</th>
+                      <th className="af-th">Auditor</th>
+                      <th className="af-th w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-canvas transition-colors">
+                        <td className="af-td"><AssetTag tag={item.tag} /></td>
+                        <td className="af-td font-medium text-ink">{item.asset}</td>
+                        <td className="af-td text-xs text-ink3">{item.location}</td>
+                        <td className="af-td"><StatusChip status={item.verification} size="sm" /></td>
+                        <td className="af-td text-ink3">{item.auditor}</td>
+                        <td className="af-td">
+                          {item.verification === "PENDING" && (
+                            <button className="flex items-center gap-1 text-[10px] font-bold text-signal hover:text-signal2 transition-colors">
+                              <CheckSquare size={12} /> Verify
+                            </button>
+                          )}
+                          {item.verification !== "PENDING" && (
+                            <ChevronRight size={12} className="text-ink3" />
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

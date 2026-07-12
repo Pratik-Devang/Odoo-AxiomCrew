@@ -1,207 +1,156 @@
 "use client";
 
-import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
-import { SectionHeader } from "@/components/section-header";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line 
-} from "recharts";
-import { FileDown, Calendar, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
+import { TrendingUp, TrendingDown, Download } from "lucide-react";
 
-// Mock Data
 const utilizationData = [
-  { name: "Laptops", rate: 87, count: 120 },
-  { name: "Monitors", rate: 76, count: 150 },
-  { name: "Desks", rate: 92, count: 80 },
-  { name: "Vehicles", rate: 45, count: 10 },
-  { name: "Projectors", rate: 58, count: 15 },
+  { month: "Jul", rate: 72 }, { month: "Aug", rate: 75 }, { month: "Sep", rate: 68 },
+  { month: "Oct", rate: 82 }, { month: "Nov", rate: 79 }, { month: "Dec", rate: 85 },
 ];
 
-const maintenanceTrends = [
-  { name: "Jul", cost: 1200, count: 8 },
-  { name: "Aug", cost: 1900, count: 12 },
-  { name: "Sep", cost: 950, count: 5 },
-  { name: "Oct", cost: 2400, count: 15 },
-  { name: "Nov", cost: 1500, count: 9 },
-  { name: "Dec", cost: 3100, count: 18 },
+const categoryData = [
+  { category: "Electronics",     allocated: 52, available: 18 },
+  { category: "Furniture",       allocated: 30, available: 20 },
+  { category: "AV Equipment",    allocated: 12, available: 4  },
+  { category: "Office Equipment",allocated: 8,  available: 12 },
+  { category: "Vehicles",        allocated: 5,  available: 2  },
 ];
 
-// Heatmap data (7 days x 8 blocks)
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const timeSlots = ["9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+const maintenanceTrend = [
+  { month: "Jul", tickets: 8  }, { month: "Aug", tickets: 11 }, { month: "Sep", tickets: 6  },
+  { month: "Oct", tickets: 14 }, { month: "Nov", tickets: 9  }, { month: "Dec", tickets: 12 },
+];
+
+const kpis = [
+  { label: "Avg Utilization",  value: "77%",  delta: "+5% vs last quarter", up: true  },
+  { label: "Assets Audited",   value: "284",  delta: "92% of registry",     up: true  },
+  { label: "Maintenance Cost", value: "₹2.4L",delta: "-12% vs last quarter",up: false },
+  { label: "Avg Return Time",  value: "18d",  delta: "+2d vs target",       up: false },
+];
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<"utilization" | "maintenance" | "heatmap">("utilization");
-
-  // Generate mock booking density for heatmap (values 0 - 1)
-  const getBookingDensity = (dayIdx: number, timeIdx: number) => {
-    // Arbitrary formula to generate nice visual distribution
-    return ((dayIdx * 2 + timeIdx * 3) % 7) / 7;
-  };
-
   return (
-    <div>
-      <PageHeader 
-        title="Reports & Analytics" 
-        action={
-          <div className="flex gap-2">
-            <button className="af-btn-secondary gap-1.5">
-              <FileDown size={14} /> Export CSV
-            </button>
-            <button className="af-btn-secondary gap-1.5">
-              <FileDown size={14} /> Export PDF
-            </button>
-          </div>
-        }
-      />
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b-2 border-ink pb-4">
+        <div>
+          <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Reports & Analytics</h1>
+          <p className="text-xs text-ink3 mt-0.5">Q4 2025 — All departments</p>
+        </div>
+        <button className="af-btn-secondary gap-1.5">
+          <Download size={13} />
+          Export CSV
+        </button>
+      </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border mb-6">
-        {[
-          ["utilization", "Asset Utilization"],
-          ["maintenance", "Maintenance Cost Trends"],
-          ["heatmap", "Booking Heatmap"],
-        ].map(([tabId, label]) => (
-          <button
-            key={tabId}
-            onClick={() => setActiveTab(tabId as any)}
-            className={`mr-6 py-3 text-sm font-medium transition border-b-2 ${
-              activeTab === tabId ? "border-signal text-ink" : "border-transparent text-ink3 hover:text-ink"
-            }`}
-          >
-            {label}
-          </button>
+      {/* KPI Mosaic */}
+      <div className="flex gap-px border-2 border-ink bg-ink">
+        {kpis.map((k) => (
+          <div key={k.label} className="flex-1 bg-surface px-4 py-4">
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-ink3 mb-2">{k.label}</p>
+            <p className="text-3xl font-bold text-ink leading-none">{k.value}</p>
+            <div className={`flex items-center gap-1 mt-2 text-[10px] font-semibold ${k.up ? "text-go" : "text-danger"}`}>
+              {k.up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+              {k.delta}
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart Card (Left 2 cols) */}
-        <div className="lg:col-span-2">
-          {activeTab === "utilization" && (
-            <div className="af-card p-5">
-              <div className="flex items-center justify-between mb-6">
-                <SectionHeader title="Asset Category Utilization Rates (%)" className="mb-0" />
-                <span className="text-xs text-ink3">Target: &gt;75%</span>
-              </div>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={utilizationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                    <XAxis dataKey="name" stroke="#8A8880" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#8A8880" fontSize={11} tickLine={false} domain={[0, 100]} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: "#FFFFFF", borderColor: "#D6D4CE", borderRadius: "6px" }}
-                      itemStyle={{ color: "#1C1C1A", fontSize: "12px" }}
-                      labelStyle={{ fontWeight: "bold", fontSize: "11px", color: "#8A8880" }}
-                    />
-                    <Bar dataKey="rate" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={40} name="Utilization %" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "maintenance" && (
-            <div className="af-card p-5">
-              <div className="flex items-center justify-between mb-6">
-                <SectionHeader title="Monthly Maintenance Expenses ($)" className="mb-0" />
-                <span className="text-xs text-ink3">Total YTD: $11,050</span>
-              </div>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={maintenanceTrends} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                    <XAxis dataKey="name" stroke="#8A8880" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#8A8880" fontSize={11} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#FFFFFF", borderColor: "#D6D4CE", borderRadius: "6px" }}
-                      itemStyle={{ color: "#1C1C1A", fontSize: "12px" }}
-                      labelStyle={{ fontWeight: "bold", fontSize: "11px", color: "#8A8880" }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="cost" 
-                      stroke="#2563EB" 
-                      strokeWidth={2} 
-                      dot={false}
-                      name="Cost ($)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "heatmap" && (
-            <div className="af-card p-5">
-              <div className="flex items-center justify-between mb-6">
-                <SectionHeader title="Resource Booking Peak Hours Heatmap" className="mb-0" />
-                <div className="flex items-center gap-1.5 text-xs text-ink3">
-                  <span>Low</span>
-                  <div className="h-3 w-16 bg-gradient-to-r from-signal/5 to-signal rounded" />
-                  <span>High</span>
-                </div>
-              </div>
-
-              {/* Heatmap Grid */}
-              <div className="space-y-2">
-                {/* Time slot labels header */}
-                <div className="grid grid-cols-8 gap-1.5 pl-12 text-center text-[10px] font-semibold tracking-wider text-ink3">
-                  {timeSlots.map(t => (
-                    <div key={t}>{t}</div>
-                  ))}
-                </div>
-                {/* Day rows */}
-                {days.map((day, dayIdx) => (
-                  <div key={day} className="flex items-center gap-3">
-                    {/* Day label */}
-                    <div className="w-9 font-semibold text-xs text-ink2 text-right">{day}</div>
-                    {/* Cells */}
-                    <div className="flex-1 grid grid-cols-8 gap-1.5">
-                      {timeSlots.map((_, timeIdx) => {
-                        const density = getBookingDensity(dayIdx, timeIdx);
-                        return (
-                          <div 
-                            key={timeIdx}
-                            className="aspect-video rounded border border-border/10 cursor-pointer transition"
-                            style={{ 
-                              backgroundColor: `rgba(37, 99, 235, ${Math.max(0.05, density)})` 
-                            }}
-                            title={`${day} at ${timeSlots[timeIdx]}: ${(density * 10).toFixed(0)} bookings`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Utilization Trend */}
+        <div className="border-2 border-ink bg-surface">
+          <div className="border-b-2 border-ink px-4 py-3 bg-canvas">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink">Asset Utilization Rate — 6 Months</p>
+          </div>
+          <div className="p-4">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={utilizationData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0DA" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ border: "2px solid #1A1A1A", borderRadius: 0, fontSize: 11, fontWeight: 700 }}
+                  cursor={{ stroke: "#0066FF", strokeWidth: 1 }}
+                />
+                <Line type="monotone" dataKey="rate" stroke="#0066FF" strokeWidth={2} dot={{ fill: "#0066FF", r: 3, strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Side Summary Cards (Right 1 col) */}
-        <div className="space-y-4">
-          <SectionHeader title="Summary Insights" />
-          
-          <div className="af-card p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={16} className="text-signal" />
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-ink2">High Utilization</h4>
-            </div>
-            <p className="text-xs text-ink3 leading-relaxed">
-              Furniture and standing desk utilization is currently exceeding <span className="font-semibold text-ink">92%</span>, suggesting the need for additional procurement in Q1.
-            </p>
+        {/* Category Breakdown */}
+        <div className="border-2 border-ink bg-surface">
+          <div className="border-b-2 border-ink px-4 py-3 bg-canvas">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink">Assets by Category</p>
           </div>
-
-          <div className="af-card p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar size={16} className="text-go" />
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-ink2">Peak Booking Hours</h4>
+          <div className="p-4">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={categoryData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0DA" vertical={false} />
+                <XAxis dataKey="category" tick={{ fontSize: 9, fontWeight: 700, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ border: "2px solid #1A1A1A", borderRadius: 0, fontSize: 11, fontWeight: 700 }}
+                  cursor={{ fill: "#F4F4F0" }}
+                />
+                <Bar dataKey="allocated" fill="#0066FF" radius={0} maxBarSize={28} />
+                <Bar dataKey="available" fill="#16A34A" radius={0} maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 mt-3 justify-center">
+              <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 bg-signal inline-block" /><span className="text-[10px] font-bold text-ink3">Allocated</span></div>
+              <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 bg-go inline-block" /><span className="text-[10px] font-bold text-ink3">Available</span></div>
             </div>
-            <p className="text-xs text-ink3 leading-relaxed">
-              Conference rooms experience peak density between <span className="font-semibold text-ink">11:00 AM – 2:00 PM</span>. Suggest limiting recurring syncs to mornings or late afternoons.
-            </p>
+          </div>
+        </div>
+
+        {/* Maintenance Trend */}
+        <div className="border-2 border-ink bg-surface">
+          <div className="border-b-2 border-ink px-4 py-3 bg-canvas">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink">Maintenance Tickets — 6 Months</p>
+          </div>
+          <div className="p-4">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={maintenanceTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0DA" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#8A8A8A" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ border: "2px solid #1A1A1A", borderRadius: 0, fontSize: 11, fontWeight: 700 }}
+                  cursor={{ fill: "#F4F4F0" }}
+                />
+                <Bar dataKey="tickets" fill="#7C3AED" radius={0} maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Maintained Assets */}
+        <div className="border-2 border-ink bg-surface">
+          <div className="border-b-2 border-ink px-4 py-3 bg-canvas">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink">Top Maintained Assets (YTD)</p>
+          </div>
+          <div className="divide-y divide-ink/10">
+            {[
+              { tag: "AF-0003", name: "Canon EOS R6",       count: 4, cost: "₹42,000" },
+              { tag: "AF-0011", name: "HP LaserJet Pro",    count: 3, cost: "₹18,500" },
+              { tag: "AF-0008", name: "Toyota HiAce Van",   count: 3, cost: "₹67,000" },
+              { tag: "AF-0001", name: "Dell XPS 15",        count: 2, cost: "₹12,000" },
+              { tag: "AF-0005", name: "Projector EB-L510U", count: 2, cost: "₹8,200"  },
+            ].map((item, i) => (
+              <div key={item.tag} className="flex items-center gap-3 px-4 py-3">
+                <span className="w-5 text-[10px] font-bold text-ink3">{i + 1}.</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-ink truncate">{item.name}</p>
+                  <p className="text-[10px] text-ink3 font-mono">{item.tag}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-ink">{item.count} repairs</p>
+                  <p className="text-[10px] text-ink3">{item.cost}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

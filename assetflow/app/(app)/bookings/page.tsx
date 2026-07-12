@@ -1,283 +1,161 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
-import { SectionHeader } from "@/components/section-header";
 import { StatusChip } from "@/components/status-chip";
 import { AssetTag } from "@/components/asset-tag";
-import { Calendar, Plus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, CalendarDays, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 
-// Mock resources
-const resources = [
-  { id: "room-a", name: "Conference Room A (Floor 1)", type: "Room", tag: "AF-R01" },
-  { id: "room-b", name: "Meeting Room B (Floor 2)", type: "Room", tag: "AF-R02" },
-  { id: "van-1", name: "Toyota HiAce Van", type: "Vehicle", tag: "AF-V01" },
-  { id: "projector-1", name: "Epson Projector EB-L510U", type: "Equipment", tag: "AF-E01" },
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+
+type Booking = {
+  id: number; tag: string; asset: string; bookedBy: string;
+  date: string; start: string; end: string; status: string; purpose: string;
+};
+
+const initialBookings: Booking[] = [
+  { id: 1, tag: "AF-0005", asset: "Projector EB-L510U",   bookedBy: "Priya Shah",   date: "Mon", start: "09:00", end: "11:00", status: "UPCOMING",  purpose: "Quarterly review" },
+  { id: 2, tag: "AF-0010", asset: 'Sony Bravia 65" TV',   bookedBy: "Liam Patel",   date: "Mon", start: "14:00", end: "16:00", status: "UPCOMING",  purpose: "Client presentation" },
+  { id: 3, tag: "AF-0007", asset: "Whiteboard 240x120",   bookedBy: "Mia Chen",     date: "Tue", start: "10:00", end: "12:00", status: "UPCOMING",  purpose: "Design workshop" },
+  { id: 4, tag: "AF-0005", asset: "Projector EB-L510U",   bookedBy: "Ethan Brown",  date: "Wed", start: "09:00", end: "10:00", status: "CANCELLED", purpose: "Training (cancelled)" },
+  { id: 5, tag: "AF-0010", asset: 'Sony Bravia 65" TV',   bookedBy: "Noah Williams",date: "Thu", start: "11:00", end: "13:00", status: "UPCOMING",  purpose: "All-hands meeting" },
+  { id: 6, tag: "AF-0008", asset: "Toyota HiAce Van",     bookedBy: "Priya Shah",   date: "Fri", start: "08:00", end: "17:00", status: "UPCOMING",  purpose: "Site visit" },
 ];
 
-// Mock bookings for Conference Room A
-const initialBookings = [
-  { id: 1, resourceId: "room-a", title: "All-Hands Weekly", user: "Avery Admin", day: "Monday", time: "09:00 - 10:30", startHour: 9, duration: 1.5, status: "COMPLETED" },
-  { id: 2, resourceId: "room-a", title: "Product Sync", user: "Priya Shah", day: "Wednesday", time: "11:00 - 12:30", startHour: 11, duration: 1.5, status: "ONGOING" },
-  { id: 3, resourceId: "room-a", title: "Interview Panel", user: "Liam Patel", day: "Wednesday", time: "14:00 - 15:30", startHour: 14, duration: 1.5, status: "UPCOMING" },
-  { id: 4, resourceId: "room-a", title: "Design Critique", user: "Noah Williams", day: "Friday", time: "15:00 - 16:30", startHour: 15, duration: 1.5, status: "UPCOMING" },
-];
-
-const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+const statusColor: Record<string, string> = {
+  UPCOMING:  "bg-signal text-white",
+  ONGOING:   "bg-go text-white",
+  CANCELLED: "bg-ink3 text-white",
+  COMPLETED: "bg-canvas text-ink3 border border-ink/20",
+};
 
 export default function BookingsPage() {
-  const [selectedResource, setSelectedResource] = useState(resources[0]);
-  const [bookings, setBookings] = useState(initialBookings);
-  
-  // Form states
-  const [title, setTitle] = useState("");
-  const [day, setDay] = useState("Monday");
-  const [startHour, setStartHour] = useState(9);
-  const [duration, setDuration] = useState(1);
-  const [purpose, setPurpose] = useState("");
-
-  // Check for overlaps
-  const checkOverlap = () => {
-    if (!title) return { ok: true };
-    const end = startHour + duration;
-    
-    // Find if any booking for same resource, same day, overlaps
-    const conflicting = bookings.find(b => 
-      b.resourceId === selectedResource.id && 
-      b.day === day &&
-      ((startHour >= b.startHour && startHour < (b.startHour + b.duration)) ||
-       (end > b.startHour && end <= (b.startHour + b.duration)) ||
-       (startHour <= b.startHour && end >= (b.startHour + b.duration)))
-    );
-
-    if (conflicting) {
-      return { ok: false, msg: `✗ Overlaps with "${conflicting.title}" (${conflicting.time})` };
-    }
-    return { ok: true, msg: "✓ Available" };
-  };
-
-  const overlapResult = checkOverlap();
-
-  const handleCreateBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!overlapResult.ok || !title) return;
-
-    const formattedTime = `${String(startHour).padStart(2, '0')}:00 - ${String(startHour + duration).padStart(2, '0')}:00`;
-    const newBooking = {
-      id: Date.now(),
-      resourceId: selectedResource.id,
-      title,
-      user: "Avery Admin",
-      day,
-      time: formattedTime,
-      startHour,
-      duration,
-      status: "UPCOMING",
-    };
-
-    setBookings([...bookings, newBooking]);
-    setTitle("");
-    setPurpose("");
-  };
-
-  const getBookingForSlot = (dayName: string, hour: number) => {
-    return bookings.filter(b => 
-      b.resourceId === selectedResource.id && 
-      b.day === dayName && 
-      hour >= b.startHour && 
-      hour < (b.startHour + b.duration)
-    );
-  };
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [bookings] = useState(initialBookings);
 
   return (
-    <div>
-      <PageHeader 
-        title="Resource Booking" 
-        action={
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-ink3" />
-            <select 
-              value={selectedResource.id}
-              onChange={(e) => setSelectedResource(resources.find(r => r.id === e.target.value) || resources[0])}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink focus:outline-none"
-            >
-              {resources.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-        }
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Weekly Calendar Grid (Left 3 cols) */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between">
-            <SectionHeader title={`Schedule for ${selectedResource.name}`} className="mb-0" />
-            <AssetTag tag={selectedResource.tag} />
-          </div>
-
-          <div className="af-card overflow-hidden">
-            {/* Header row */}
-            <div className="grid grid-cols-6 border-b border-border bg-gray_bg">
-              <div className="px-4 py-3 text-xs font-semibold text-ink3 border-r border-border">Time</div>
-              {weekDays.map(dayName => (
-                <div key={dayName} className="px-4 py-3 text-xs font-semibold text-ink text-center border-r border-border last:border-r-0">
-                  {dayName}
-                </div>
-              ))}
-            </div>
-
-            {/* Grid rows */}
-            <div className="divide-y divide-border">
-              {hours.map(hour => (
-                <div key={hour} className="grid grid-cols-6 min-h-[70px]">
-                  {/* Hour label */}
-                  <div className="px-4 py-3 text-xs font-mono text-ink3 border-r border-border flex items-center">
-                    {String(hour).padStart(2, '0')}:00
-                  </div>
-
-                  {/* Day columns */}
-                  {weekDays.map(dayName => {
-                    const cellBookings = getBookingForSlot(dayName, hour);
-                    const isStart = cellBookings.some(b => b.startHour === hour);
-
-                    return (
-                      <div key={dayName} className="relative border-r border-border last:border-r-0 p-1 bg-surface group hover:bg-sunken/40 transition-colors">
-                        {cellBookings.map(b => {
-                          // Only display title/details at the start slot
-                          if (b.startHour !== hour) return null;
-                          const isConflicting = cellBookings.length > 1;
-
-                          return (
-                            <div 
-                              key={b.id} 
-                              className={`absolute inset-x-1 z-10 p-2 rounded text-xs select-none ${
-                                isConflicting 
-                                  ? "bg-danger/10 border border-danger/30 text-danger" 
-                                  : "bg-signal/10 border border-signal/30 text-signal"
-                              }`}
-                              style={{ 
-                                height: `calc(${b.duration} * 70px - 8px)`,
-                                top: "4px" 
-                              }}
-                            >
-                              <div className="font-semibold truncate">{b.title}</div>
-                              <div className="text-[10px] opacity-80 truncate">{b.user}</div>
-                              <div className="text-[10px] mt-1 font-mono">{b.time}</div>
-                              <div className="mt-1">
-                                <StatusChip status={b.status} size="sm" />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Booking Form (Right 1 col) */}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <div>
-          <div className="af-card p-5 sticky top-20">
-            <SectionHeader title="New Booking" />
-            <form onSubmit={handleCreateBooking} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-ink2 mb-1.5">Booking Title</label>
-                <input 
-                  type="text" 
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Scrum Sync"
-                  required
-                  className="af-input"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-ink2 mb-1.5">Day</label>
-                <select 
-                  value={day}
-                  onChange={(e) => setDay(e.target.value)}
-                  className="af-input"
-                >
-                  {weekDays.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-ink2 mb-1.5">Start Time</label>
-                  <select 
-                    value={startHour}
-                    onChange={(e) => setStartHour(Number(e.target.value))}
-                    className="af-input"
-                  >
-                    {hours.map(h => (
-                      <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-ink2 mb-1.5">Duration</label>
-                  <select 
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                    className="af-input"
-                  >
-                    <option value={1}>1 hour</option>
-                    <option value={1.5}>1.5 hours</option>
-                    <option value={2}>2 hours</option>
-                    <option value={3}>3 hours</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-ink2 mb-1.5">Purpose / Notes</label>
-                <textarea 
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value)}
-                  placeholder="Details about booking..."
-                  rows={2}
-                  className="af-input"
-                />
-              </div>
-
-              {/* Overlap Status Banner */}
-              {title && (
-                <div className={`p-3 rounded border text-xs flex items-center gap-2 ${
-                  overlapResult.ok 
-                    ? "bg-go_bg border-go/20 text-go" 
-                    : "bg-danger_bg border-danger/20 text-danger"
-                }`}>
-                  {overlapResult.ok ? (
-                    <CheckCircle2 size={14} className="shrink-0" />
-                  ) : (
-                    <AlertCircle size={14} className="shrink-0" />
-                  )}
-                  <span>{overlapResult.msg}</span>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={!overlapResult.ok || !title}
-                className="w-full af-btn-primary"
-              >
-                <Plus size={14} />
-                Reserve Slot
-              </button>
-            </form>
+          <h1 className="text-lg font-bold uppercase tracking-widest text-ink">Resource Booking</h1>
+          <p className="text-xs text-ink3 mt-0.5">Weekly schedule — {bookings.filter(b => b.status === "UPCOMING").length} upcoming</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex border-2 border-ink">
+            <button
+              onClick={() => setView("grid")}
+              className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-colors ${view === "grid" ? "bg-ink text-white" : "bg-surface text-ink hover:bg-canvas"}`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`px-3 py-1.5 text-[10px] font-bold uppercase border-l-2 border-ink transition-colors ${view === "list" ? "bg-ink text-white" : "bg-surface text-ink hover:bg-canvas"}`}
+            >
+              List
+            </button>
           </div>
+          <button className="af-btn-primary gap-1.5">
+            <Plus size={13} />
+            New Booking
+          </button>
         </div>
       </div>
+
+      {view === "grid" ? (
+        /* Weekly Grid View */
+        <div className="border-2 border-ink bg-surface overflow-hidden">
+          {/* Week nav */}
+          <div className="flex items-center justify-between border-b-2 border-ink px-4 py-3 bg-canvas">
+            <button className="flex items-center gap-1 text-[10px] font-bold uppercase text-ink2 hover:text-ink transition-colors">
+              <ChevronLeft size={13} /> Prev
+            </button>
+            <p className="text-xs font-bold uppercase tracking-widest text-ink">Week of Dec 16–22, 2025</p>
+            <button className="flex items-center gap-1 text-[10px] font-bold uppercase text-ink2 hover:text-ink transition-colors">
+              Next <ChevronRight size={13} />
+            </button>
+          </div>
+
+          {/* Grid */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              <thead>
+                <tr className="bg-canvas">
+                  <th className="af-th w-16 text-center">Time</th>
+                  {DAYS.map((d) => <th key={d} className="af-th text-center">{d}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {HOURS.map((hour) => (
+                  <tr key={hour} className="border-b border-ink/10 hover:bg-canvas/50">
+                    <td className="py-2 px-3 text-center font-mono text-[10px] text-ink3 border-r border-ink/10">{hour}</td>
+                    {DAYS.map((day) => {
+                      const booking = bookings.find(
+                        (b) => b.date === day && b.start === hour
+                      );
+                      return (
+                        <td key={day} className="py-1.5 px-2 border-r border-ink/10 min-w-[100px]">
+                          {booking && (
+                            <div className={`text-[9px] font-bold px-2 py-1.5 leading-tight ${statusColor[booking.status]}`}>
+                              <p className="truncate">{booking.asset}</p>
+                              <p className="font-normal opacity-80 truncate">{booking.start}–{booking.end}</p>
+                              <p className="font-normal opacity-70 truncate">{booking.bookedBy}</p>
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* List View */
+        <div className="border-2 border-ink bg-surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-canvas">
+                  <th className="af-th">Asset</th>
+                  <th className="af-th">Name</th>
+                  <th className="af-th">Booked By</th>
+                  <th className="af-th">Day</th>
+                  <th className="af-th">Time</th>
+                  <th className="af-th">Purpose</th>
+                  <th className="af-th">Status</th>
+                  <th className="af-th w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map((b) => (
+                  <tr key={b.id} className="hover:bg-canvas transition-colors">
+                    <td className="af-td"><AssetTag tag={b.tag} /></td>
+                    <td className="af-td font-medium text-ink">{b.asset}</td>
+                    <td className="af-td text-ink2">{b.bookedBy}</td>
+                    <td className="af-td">
+                      <span className="border border-ink/30 bg-canvas px-2 py-0.5 text-[10px] font-bold uppercase">{b.date}</span>
+                    </td>
+                    <td className="af-td font-mono text-xs text-ink3">
+                      <span className="flex items-center gap-1"><Clock size={10} />{b.start}–{b.end}</span>
+                    </td>
+                    <td className="af-td text-xs text-ink3 max-w-[160px] truncate">{b.purpose}</td>
+                    <td className="af-td"><StatusChip status={b.status} size="sm" /></td>
+                    <td className="af-td">
+                      {b.status === "UPCOMING" && (
+                        <button className="text-ink3 hover:text-danger transition-colors"><X size={13} /></button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
